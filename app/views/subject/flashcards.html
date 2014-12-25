@@ -1,0 +1,28 @@
+﻿<div class="cards">
+    <div class="text-center">
+        <h2>Flashcards</h2>
+        <br />
+        <span data-bind="visible: flashcards().length">Cards to learn: <span class="badge" data-bind="    text: flashcards().length"></span></span>
+        <span data-bind="visible: !flashcards().length">No cards for today!</span>
+        <br />
+        <button class="btn btn-default" data-bind="click: showNextCard, visible: !currentCard() && flashcards().length">Study!</button>
+    </div>
+    <div class="col-md-6 col-md-offset-3 text-center" data-bind="with: currentCard">
+        <textarea class="form-control card-front" data-bind="text: front, css: { showAnswer: !$root.isAnswerVisible() }, attr: { rows: $root.isAnswerVisible() ? 2 : 4 }" placeholder="front"></textarea>
+        <textarea rows="3" class="form-control card-back" data-bind="text: back, visible: $root.isAnswerVisible," placeholder="back"></textarea>
+        <hr />
+        <div data-bind="visible: !$root.isAnswerVisible()">
+            <button class="btn btn-default" data-bind="click: $root.showAnswer">Show answer</button>
+        </div>
+        <div data-bind="visible: $root.isAnswerVisible">
+            <span class="hard">Hard</span>
+            <span data-bind="foreach: [0, 1, 2]">
+                <button class="btn btn-default hard" data-bind="text: $data, click: $root.reviewCard"></button>
+            </span>
+            <span data-bind="foreach: [3, 4, 5]">
+                <button class="btn btn-default easy" data-bind="text: $data, click: $root.reviewCard"></button>
+            </span>
+            <span class="easy">Easy</span>
+        </div>
+    </div>
+</div>

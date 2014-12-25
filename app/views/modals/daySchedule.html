@@ -1,0 +1,40 @@
+﻿<div class="modal-wrapper">
+    <div class="modal-content">
+        <div class="modal-header">
+            <button type="button" class="close" data-bind="click: cancel"><span>&times;</span></button>
+            <h3>Day schedule</h3>
+            <h4 data-bind="text: date.format('MM/DD/YYYY')"></h4>
+        </div>
+        <div class="modal-body day-schedule">
+            <table class="table table-stripped">
+                <tr>
+                    <td></td>
+                    <td>Time</td>
+                    <td>Subject</td>
+                    <td>Lecture Room</td>
+                    <td></td>
+                </tr>
+                <!--ko foreach: lectures -->
+                <tr>
+                    <td data-bind="text: $index() + 1"></td>
+                    <td>
+                        <div data-bind="compose: { model: 'viewmodels/timepicker', mode: 'templated' }"></div>
+                    </td>
+                    <td><input class="form-control input-small" data-bind="value: subject" placeholder="subject" /></td>
+                    <td><input class="form-control input-small" data-bind="value: lectureRoom" placeholder="lectureRoom" /></td>
+                    <td class="text-right"><i class="fa fa-times" data-bind="click: function () { $parent.deleteLecture($data, $parent); }"></i></td>
+                </tr>
+                <!--/ko-->
+            </table>
+            <div class="text-right">
+                <button class="btn btn-default" data-bind="click: addLecture">
+                    <strong>Add new lecture</strong>
+                </button>
+            </div>
+        </div>
+        <div class="modal-footer text-right">
+            <button class="btn btn-default success" data-bind="click: save">Save</button>
+            <button class="btn btn-default danger" data-bind="click: cancel">Cancel</button>
+        </div>
+    </div>
+</div>

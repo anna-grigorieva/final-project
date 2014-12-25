@@ -1,0 +1,281 @@
+﻿html, body, .container {
+    height: 100%;
+}
+body {
+    background: url(images/font-2.jpg) repeat-y;
+    background-size: cover;
+    font-family: Calibri, Arial;
+    font-size: 16pt;
+}
+.mywell {
+    background-color: rgba(255, 255, 255, 0.2);
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    padding: 5% 40px;
+    min-height: 550px;
+    -webkit-box-shadow: 0px 0px 5px 3px rgba(0,0,0,0.5);
+    -moz-box-shadow: 0px 0px 5px 3px rgba(0,0,0,0.5);
+    box-shadow: 0px 0px 5px 3px rgba(0,0,0,0.5);
+}
+.sign-in {
+    margin: 5% auto;
+    min-height: 400px;
+    width: 450px;
+}
+table {
+    table-layout:auto;
+}
+input .input-small {
+    width: 50px;
+}
+.panel-heading {
+    padding: 12px 20px !important;
+    background-color: rgb(248, 243, 226) !important;
+    -webkit-box-shadow: 3px -3px 17px -4px rgba(0,0,0,0.44);
+    -moz-box-shadow: 3px -3px 17px -4px rgba(0,0,0,0.44);
+    box-shadow: 3px -3px 17px -4px rgba(0,0,0,0.44);
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 14px;
+    border-radius: 4px;
+}
+.panel-body {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+.add-new-item {
+    background-color: rgb(251, 249, 237) !important;
+    color: gray !important;
+    text-align: right;
+}
+.unbordered td, .unbordered th {
+    border: none !important;
+}
+.panel-heading a:first-child {
+    font-size: 16pt;
+}
+.tasks table, .events table, .calendar table{
+    table-layout:fixed;
+}
+
+.calendar{
+    padding: 10px;
+    margin: 0 auto;
+    overflow:hidden;
+}
+.calendar table {
+    margin: 10px auto;
+    width:100%;
+    text-align:center;
+}
+.calendar td div {
+    height: 40px;
+    width: 40px;
+    cursor:pointer;
+    padding-top: 7px;
+    border-radius: 5px;
+    font-size: 16pt;
+}
+.calendar th {
+    font-size: 14pt;
+}
+.calendar .important {
+    background-color: #a22f2f;
+    font-weight: bold;
+    color: white;
+}
+.calendar .selected, .calendar td div:hover {
+    background-color: gray;
+    font-weight: bold;
+    color: white;
+}
+.important.selected {
+    border: 1px solid #a22f2f;
+}
+.fa:hover {
+    cursor: pointer;
+    color: black;
+}
+.fa-times {
+    color: #b6b6b6;
+}
+.log-out {
+    color: gray;
+    padding-top: 10px;
+}
+.log-out:hover {
+    cursor:pointer;
+    color: white;
+}
+.danger {
+    background-color:#a21a1a;
+    color: lightgray;
+}
+.success {
+    background-color:#117562;
+    color: lightgray;
+}
+.danger:hover {
+    background-color:#a22f2f;
+    color:white;
+}
+.success:hover {
+    background-color:#378879;
+    color:white;
+}
+.modal-wrapper {
+    padding: 20px;
+    background-color: rgba(10, 10, 10, 0.2);
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+}
+.modal-content {
+    background-image: -webkit-gradient(linear, right top, left bottom, color-stop(0.24, #D1CDD0), color-stop(0.95, #F5E2C1) );
+    background-image: -o-linear-gradient(left bottom, #D1CDD0 24%, #F5E2C1 95%);
+    background-image: -moz-linear-gradient(left bottom, #D1CDD0 24%, #F5E2C1 95%);
+    background-image: -webkit-linear-gradient(left bottom, #D1CDD0 24%, #F5E2C1 95%);
+    background-image: -ms-linear-gradient(left bottom, #D1CDD0 24%, #F5E2C1 95%);
+    background-image: linear-gradient(to left bottom, #D1CDD0 24%, #F5E2C1 95%);
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    color: #5f565a;
+}
+.modal-header {
+    border-bottom: 1px solid black;
+    color: black;
+}
+.day-schedule td {
+    border: none !important;
+}
+.schedule table {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 16pt;
+}
+.calendar th, .schedule th, .editcards th{
+    border-width: 3px !important;
+    border-color: #5f565a !important;
+}
+.schedule th{
+    text-align: center;
+}
+.calendar td, .schedule td, .schedule-small td, .editcards td {
+    border-width: 2px !important;
+    border-color: #5f565a !important;
+}
+.schedule-small th{
+    border-top: none !important;
+    border-bottom: 3px solid #5f565a !important;
+}
+.hard {
+    font-weight: 500;
+    color: #a21a1a;
+}
+.easy {
+    font-weight: 500;
+    color: #117562;
+}
+.day-schedule {
+    width: 550px;
+}
+.new-subj {
+    width: 400px;
+}
+.time-btn {
+    width: 100px;
+    color: gray;
+}
+.dropdown-time {
+    min-width: 0;
+    width: 50px;
+    height: 130px;
+    overflow-y:auto;
+    text-align:center;
+}
+.side-nav li {
+    background-color: rgba(132, 146, 141, 0.5);
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    margin-top: 10px;
+    -webkit-box-shadow: 3px 3px 3px 0px rgba(0,0,0,0.5);
+    -moz-box-shadow: 3px 3px 3px 0px rgba(0,0,0,0.5);
+    box-shadow: 3px 3px 3px 0px rgba(0,0,0,0.5);
+}
+.side-nav a {
+    text-shadow: 4px 2px 3px rgba(150, 150, 150, 1);
+    color: white;
+}
+.side-nav .active {
+    background-color: rgba(233, 225, 198, 0.6);
+}
+.side-nav .active a {
+    color: #4f494c;
+}
+.side-nav li:hover a {
+    color: #4f494c;
+    background-color: rgba(233, 225, 198, 0.9);
+     -webkit-border-radius: 4px !important;
+    -moz-border-radius: 4px !important;
+    border-radius: 4px !important;
+}
+.side-nav-inner {
+    margin-left: 50px;
+    padding: 10px;
+    list-style-type: none;
+}
+.side-nav-inner a {
+    padding-left: 10px;
+    text-decoration: none;
+}
+.side-nav li:hover {
+    color: #4f494c;
+    background-color: rgba(233, 225, 198, 0.9);
+}
+#newCard {
+    display: none;
+}
+.card-front {
+    font-size: 20pt;
+    text-align: center;
+}
+.card-back {
+    font-size: 16pt;
+    color: #423c3f;
+}
+.cards textarea, .editcards textarea {
+    background-color: rgba(247, 244, 222, 0.74) !important;
+}
+.note i {
+    font-size: 18pt;
+    color: whitesmoke;
+}
+table .editable:hover {
+    cursor: url(images/fa-pencil.png), auto;
+}
+.inverse {
+    background-color: #353535;
+    color: whitesmoke;
+}
+textarea { 
+    resize: vertical; 
+}
+.mytable {
+    width: 90%;
+    margin: 20px auto;
+}
+.splash {
+    text-align: center;
+    margin: 10% 0 0 0;
+}
+.splash .message {
+    font-size: 2em;
+}
+.splash .fa-spinner {
+    text-align: center;
+    display: inline-block;
+    font-size: 3em;
+    margin-top: 20px;
+}

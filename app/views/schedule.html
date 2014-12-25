@@ -1,0 +1,51 @@
+﻿<div class="mywell">
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2 schedule text-center">
+            <h2>Schedule</h2>
+            <i class="fa fa-caret-left btn btn-small" data-bind="click: function () { monday(monday().subtract(7, 'd')); }"></i>
+            <span data-bind="text: week"></span>
+            <i class="fa fa-caret-right btn btn-small" data-bind="click: function () { monday(monday().add(7, 'd')); }"></i>
+            <br />
+            <table class="table table-stripped">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Monday</th>
+                        <th>Tuesday</th>
+                        <th>Wednesday</th>
+                        <th>Thursday</th>
+                        <th>Friday</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!--ko foreach: { data: lectureHours, as: 'currentTime' } -->
+                    <tr>
+                        <td data-bind="text: $data"></td>
+                        <!--ko foreach: $root.days -->
+                        <td class="editable" data-bind="click: $root.showModalDialog">
+                            <!--ko foreach: lectures -->
+                            <div data-bind="if: time() == currentTime">
+                                <span data-bind="text: subject"></span>
+                                <span data-bind="text: lectureRoom"></span>
+                            </div>
+                            <!--/ko-->
+                        </td>
+                        <!--/ko-->
+                    </tr>
+                    <!--/ko-->
+
+                    <!--ko ifnot: lectureHours().length -->
+                    <!--ko foreach: [0,1,2,3] -->
+                    <tr>
+                        <td>00:00</td>
+                        <!--ko foreach: $root.days -->
+                        <td class="editable" data-bind="click: $root.showModalDialog"></td>
+                        <!--/ko-->
+                    </tr>
+                    <!--/ko-->
+                    <!--/ko-->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

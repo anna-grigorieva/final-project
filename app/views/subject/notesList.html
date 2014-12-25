@@ -1,0 +1,31 @@
+﻿<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        <div class="notes">
+            <h2 class="text-center">Notes</h2>
+            <br />
+            <h4 data-bind="ifnot: notesList().length">No notes...</h4>
+            <div class="panel-group">
+                <!--ko foreach: notesList -->
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4 class="panel-title">
+                            <a href="#" data-bind="text: title, attr: { href: '#subjects/' + $root.subject() + '/notes/' + objectId }"></a>
+                        </h4>
+                    </div>
+                </div>
+                <!--/ko-->
+
+                <div class="panel panel-default">
+                    <div id="new-notes-heading" class="panel-heading add-new-item">
+                        <h4 class="panel-title">
+                            <span data-bind="click: createNewNotes">
+                                <span>Create new notes</span>
+                                <i class="fa fa-plus pull-right"></i>
+                            </span>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

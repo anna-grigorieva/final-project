@@ -1,0 +1,117 @@
+﻿<div class="tasks">
+    <h2 class="text-center">Tasks</h2>
+    <br />
+    <span data-bind="ifnot: tasks().length">No tasks...</span>
+
+    <div class="panel-group" id="taskist" role="tablist" aria-multiselectable="true">
+        <!--ko foreach: tasks -->
+        <div class="panel panel-default">
+            <div class="panel-heading" role="tab" data-bind="attr: { id: 'heading' + objectId() }">
+                <h4 class="panel-title">
+                    <a class="collapsed" data-toggle="collapse" data-parent="#taskist" data-bind="attr: { href: '#collapse' + objectId(), 'aria-controls': 'collapse' + objectId() }" aria-expanded="false">
+                        <span data-bind="text: title"></span>
+                    </a>
+                    <a href="#" data-bind="ifnot: $root.subject, attr: { href: '#subjects/' + subject() }">
+                        <span class="label label-default" data-bind="text: subject"></span>
+                    </a>
+                    <span class="pull-right">
+                        <i data-bind="css: { 'fa fa-exclamation': important }"></i>
+                    </span>
+                </h4>
+            </div>
+
+            <div class="panel-collapse collapse" data-bind="attr: { id: 'collapse' + objectId(), 'aria-labelledby': 'heading' + objectId() }" role="tabpanel">
+                <table class="table table-bordered" data-bind="ifnot: $parent.taskToEdit">
+                    <tr>
+                        <th colspan="3">Description</th>
+                        <th>Date</th>
+                    </tr>
+                    <tr>
+                        <td colspan="3" rowspan="4" data-bind="text: description"></td>
+                        <td data-bind="text: date().format('MM/DD/YYYY')"></td>
+                    </tr>
+                    <tr>
+                        <th>Impotant</th>
+                    </tr>
+                    <tr>
+                        <td data-bind="text: important() ? 'yes' : 'no'"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">
+                            <button class="btn bth-default" data-bind="click: $parent.startEditingTask"><i class="fa fa-pencil"></i></button>
+                            <button class="btn bth-default" data-bind="click: $parent.deleteTask"><i class="fa fa-trash-o"></i></button>
+                        </td>
+                    </tr>
+                </table>
+                <div class="panel-body" data-bind="if: $parent.taskToEdit() == $data">
+                    <table class="table unbordered" data-bind="with: $root.taskToSave">
+                        <tr>
+                            <th colspan="3">Title</th>
+                            <th>Date</th>
+                        </tr>
+                        <tr>
+                            <td colspan="3"><input class="form-control" data-bind="value: title" /></td>
+                            <td><input class="form-control" data-bind="selectDate: date" /></td>
+                        </tr>
+                        <tr>
+                            <th colspan="3">Description</th>
+                            <th>Impotant</th>
+                        </tr>
+                        <tr>
+                            <td colspan="3" rowspan="2"><textarea class="form-control" data-bind="value: description"></textarea></td>
+                            <td><input type="checkbox" data-bind="checked: important" /></td>
+                        </tr>
+                        <tr>
+                            <td class="text-center">
+                                <button class="btn bth-default" data-bind="click: $root.updateTask"><i class="fa fa-save"></i></button>
+                                <button class="btn bth-default" data-bind="click: $root.reset"><i class="fa fa-times"></i></button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!--/ko-->
+        <div class="panel panel-default">
+            <div id="new-task-heading" class="panel-heading add-new-item" role="tab">
+                <h4 class="panel-title">
+                    <a href="#new-task-collapse" class="collapsed" data-toggle="collapse" data-parent="#taskist" aria-controls="new-task-collapse" aria-expanded="false">
+                        <span>
+                            <span>Add new task</span>
+                            <i class="fa fa-plus"></i>
+                        </span>
+                    </a>
+                </h4>
+            </div>
+
+            <div id="new-task-collapse" class="panel-collapse collapse" aria-labelledby="new-task-heading" role="tabpanel">
+                <div class="panel-body">
+                    <table class="table unbordered" data-bind="with: taskToSave">
+                        <tr>
+                            <th colspan="3">Title</th>
+                            <th>Date</th>
+                        </tr>
+                        <tr>
+                            <td colspan="3"><input class="form-control" data-bind="value: title" /></td>
+                            <td><input class="form-control" data-bind="selectDate: date" /></td>
+                        </tr>
+                        <tr>
+                            <th colspan="3">Description</th>
+                            <th>Impotant</th>
+                        </tr>
+                        <tr>
+                            <td colspan="3" rowspan="2"><textarea class="form-control" data-bind="value: description"></textarea></td>
+                            <td><input type="checkbox" data-bind="checked: important" /></td>
+                        </tr>
+                        <tr>
+                            <td class="text-center">
+                                <button class="btn bth-default" data-bind="saveAndGoTo: $root.addTask"><i class="fa fa-save"></i></button>
+                                <button class="btn bth-default" data-bind="cancelCreating: $root.reset"><i class="fa fa-times"></i></button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

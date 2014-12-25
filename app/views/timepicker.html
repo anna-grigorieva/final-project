@@ -1,0 +1,14 @@
+﻿<div class="btn-group time-btn">
+    <div class="btn-group">
+        <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" data-bind="text: $parent.hours"></button>
+        <div class="dropdown-menu dropdown-time" data-bind="foreach: hh">
+            <div data-bind="text: $data, click: $parents[1].hours"></div>
+        </div>
+    </div>
+    <div class="btn-group">
+        <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" data-bind="text: $parent.minutes"></button>
+        <div class="dropdown-menu dropdown-time" data-bind="foreach: mm">
+            <div data-bind="text: $data, click: $parents[1].minutes"></div>
+        </div>
+    </div>
+</div>

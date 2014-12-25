@@ -1,0 +1,42 @@
+﻿<div class="container">
+    <nav class="navbar navbar-inverse" role="navigation" data-bind="visible: userLoggedIn">
+        <div class="container-fluid">
+            <ul class="nav navbar-nav">
+                <!--ko foreach: router.navigationModel -->
+                <li data-bind="css: { active: isActive }">
+                    <a data-bind="attr: { href: hash }">
+                        <i data-bind="attr: { class: 'fa fa-' + icon }"></i>
+                        <span data-bind="text: title"></span>
+                    </a>
+                </li>
+                <!--/ko-->
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                        <i class="fa fa-mortar-board"></i>Subjects<span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu" role="menu">
+                        <!--ko foreach: subjects-->
+                        <li>
+                            <a href="#" data-bind="attr: { href: '#subjects/' + name }">
+                                <i class="fa fa-book"></i>
+                                <span data-bind="text: name"></span>
+                            </a>
+                        </li>
+                        <!--/ko-->
+                        <li class="text-right">
+                            <span class="btn" data-bind="click: showModalDialog">
+                                <i class="fa fa-plus"></i>
+                            </span>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="log-out pull-right" data-bind="click: logOut">
+                <i class="fa fa-user"></i>
+                <span>Log Out</span>
+            </div>
+        </div>
+    </nav>
+    <div class="splash" data-bind="visible: router.isNavigating"><i class="fa fa-spinner fa-spin"></i></div>
+    <div class="page-host" data-bind="visible: !router.isNavigating(), router: {}"></div>
+</div>
