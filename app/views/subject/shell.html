@@ -1,20 +1,23 @@
-﻿<div class="mywell">
-    <div class="row">
-        <div class="col-md-3">
-            <h3 class="text-right">
-                <i class="fa fa-book"></i><span data-bind="text: subject().toUpperCase()"></span>
-                <i class="fa fa-times" data-bind="click: deleteSubject"></i>
-            </h3>
-            <ul class="nav side-nav" data-bind="foreach: router.navigationModel">
-                <li data-bind="css: { active: isActive }">
-                    <a data-bind="attr: { href: dynamicHash }, text: title"></a>
-                </li>
-            </ul>
-            <ul class="side-nav side-nav-inner">
-                <li><a data-bind="attr: { href: '#subjects/' + $root.subject() + '/flashcards' }">Card for today</a></li>
-                <li><a data-bind="attr: { href: '#subjects/' + $root.subject() + '/editcards' }">Deck</a></li>
-            </ul>
-        </div>
-        <div class="col-md-9" data-bind="router: {}"></div>
+﻿<div class="row">
+    <div class="col-md-3">
+        <h4 class="subject">
+            <i class="fa fa-book"></i> 
+            <span data-bind="text: subject().toUpperCase()"></span>
+        </h4>
     </div>
+</div>
+<div class="row">
+
+    <div class="col-md-3">
+        <ul class="nav side-nav" data-bind="foreach: router.navigationModel">
+            <li data-bind="css: { active: isActive }">
+                <a data-bind="attr: { href: dynamicHash }, text: title"></a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="col-md-9">
+        <div data-bind="router: {}"></div>
+    </div>
+
 </div>

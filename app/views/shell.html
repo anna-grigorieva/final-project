@@ -1,6 +1,15 @@
 ﻿<div class="container">
-    <nav class="navbar navbar-inverse" role="navigation" data-bind="visible: userLoggedIn">
+
+    <nav class="navbar navbar-inverse" role="navigation" data-bind="visible: userName">
         <div class="container-fluid">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+                <span class="sr-only">Toggle Navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+
+        <div class="collapse navbar-collapse" id="main-navbar">
             <ul class="nav navbar-nav">
                 <!--ko foreach: router.navigationModel -->
                 <li data-bind="css: { active: isActive }">
@@ -10,33 +19,53 @@
                     </a>
                 </li>
                 <!--/ko-->
+
                 <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-                        <i class="fa fa-mortar-board"></i>Subjects<span class="caret"></span>
+                    <a href="#" class="dropdown-toggle" data-bind="click: refreshSubjects" data-toggle="dropdown" role="button" aria-expanded="false">
+                        <i class="fa fa-book"></i> Subjects <span class="caret"></span>
                     </a>
-                    <ul class="dropdown-menu" role="menu">
+                    <ul class="dropdown-menu subj-dropdown" role="menu">
+                        <li data-bind="visible: isBusy"><div class="splash small"><i class="fa fa-spinner fa-spin"></i></div></li>
+
                         <!--ko foreach: subjects-->
                         <li>
                             <a href="#" data-bind="attr: { href: '#subjects/' + name }">
-                                <i class="fa fa-book"></i>
                                 <span data-bind="text: name"></span>
                             </a>
+                            <i class="fa fa-times" data-bind="click: $root.removeSubject, popover: 'Remove subject'"></i>
                         </li>
                         <!--/ko-->
-                        <li class="text-right">
-                            <span class="btn" data-bind="click: showModalDialog">
-                                <i class="fa fa-plus"></i>
-                            </span>
+                        <li class="add-subj">
+                            <form data-bind="submit: addNewSubject">
+                                <div class="input-group input-group-sm">
+                                    <input class="form-control" type="text" data-bind="value: newSubject, valueUpdate: 'afterkeydown'" placeholder="New subject..." required />
+                                    <span class="input-group-btn">
+                                        <button class="btn btn-default" type="submit" data-bind="popover: 'Add new subject'"><i class="fa fa-plus"></i></button>
+                                    </span>
+                                </div>
+                            </form>
                         </li>
                     </ul>
                 </li>
             </ul>
-            <div class="log-out pull-right" data-bind="click: logOut">
-                <i class="fa fa-user"></i>
-                <span>Log Out</span>
+
+            <div class="pull-right log-out">
+                <span data-bind="text: userName"></span>
+                <i class="fa fa-sign-out" data-bind="click: logOut, popover: 'Sign out'"></i>
+            </div>
+
             </div>
         </div>
     </nav>
-    <div class="splash" data-bind="visible: router.isNavigating"><i class="fa fa-spinner fa-spin"></i></div>
-    <div class="page-host" data-bind="visible: !router.isNavigating(), router: {}"></div>
+
+    <div data-bind="css: { 'wrapper dark-wrapper': userName }">
+
+        <div class="splash vertical-middle" data-bind="visible: router.isNavigating">
+            <i class="fa fa-spinner fa-spin"></i>
+        </div>
+
+        <div data-bind="visible: !router.isNavigating(), router: {}"></div>
+
+    </div>
+
 </div>

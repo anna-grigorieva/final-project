@@ -1,0 +1,38 @@
+﻿<div class="calendar">
+    <div class="text-center">
+        <i class="fa fa-caret-left btn btn-small" data-bind="click: function () { changeMonth(-1); }"></i>
+        <strong data-bind="text: selectedDate().format('MMMM YYYY')"></strong>
+        <i class="fa fa-caret-right btn btn-small" data-bind="click: function () { changeMonth(+1); }"></i>
+    </div>
+    <br />
+    
+    <div class="splash small" data-bind="visible: isCalendarRefreshing"><i class="fa fa-spinner fa-spin"></i></div>
+
+    <table class="table table-stripped text-center" data-bind="visible: !isCalendarRefreshing()">
+        <tr>
+            <th>SUN</th>
+            <th>MON</th>
+            <th>TUE</th>
+            <th>WED</th>
+            <th>THU</th>
+            <th>FRI</th>
+            <th>SAT</th>
+        </tr>
+        <!--ko foreach: calendarWeeks -->
+        <tr data-bind="foreach: $data">
+            <td>
+                <div data-bind="
+                    css: {
+                        empty: !$data,
+                        today: $root.isToday($data),
+                        selected: $root.isSelected($data),
+                        important: $root.isImportant($data)
+                    },
+                    text: $data,
+                    click: $root.changeDay">
+                </div>
+            </td>
+        </tr>
+        <!--/ko-->
+    </table>
+</div>

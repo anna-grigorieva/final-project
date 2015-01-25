@@ -3,7 +3,6 @@
         'text': '../lib/text',
         'durandal': '../lib/durandal',
         'plugins': '../lib/durandal/plugins',
-        'transitions': '../lib/durandal/transitions',
         'knockout': '../lib/knockout-3.1.0',
         'bootstrap': '../lib/bootstrap.min',
         'jquery': '../lib/jquery-1.9.1.min',
@@ -25,7 +24,7 @@ define(['durandal/system', 'durandal/app', 'durandal/viewLocator', 'bindingHandl
     system.debug(true);
     //>>excludeEnd("build")
 
-    app.title = 'Study place';
+    app.title = 'Student Organizer';
     app.configurePlugins({
         router: true,
         dialog: true

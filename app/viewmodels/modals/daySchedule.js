@@ -1,27 +1,21 @@
-﻿define(['plugins/dialog', 'knockout', 'constructors/lecture'], function (dialog, ko, Lecture) {
-    var DayScheduleModal = function (day) {
+﻿define(['durandal/app', 'plugins/dialog'], function (app, dialog) {
+    var DayScheduleModal = function (day, lectureHours) {
         this.date = day.date;
-        this.lectures = ko.observableArray(day.lectures().slice().sort(function (first, second) {
-            first = moment({ h: first.hours(), m: first.minutes(), s: 0, ms: 0 });
-            second = moment({ h: second.hours(), m: second.minutes(), s: 0, ms: 0 });
-            return first - second;
-        }));
+        this.lectures = day.lectures;
+        this.lectureHours = lectureHours;
     };
-
-    DayScheduleModal.prototype.addLecture = function () {
-        this.lectures.push(new Lecture({ date: this.date }));
+    DayScheduleModal.prototype.clear = function (lecture) {
+        lecture.subject('');
+        lecture.lectureRoom('');
     };
-    DayScheduleModal.prototype.deleteLecture = function (lecture, self) {
-        self.lectures.remove(lecture);
-    };
-    DayScheduleModal.prototype.cancel = function () {
-        dialog.close(this);
+    DayScheduleModal.prototype.close = function () {
+        dialog.close(this, false);
     };
     DayScheduleModal.prototype.save = function () {
-        dialog.close(this, this.lectures());
+        dialog.close(this, true);
     };
-    DayScheduleModal.show = function (day) {
-        return dialog.show(new DayScheduleModal(day));
+    DayScheduleModal.show = function (day, lectureHours) {
+        return dialog.show(new DayScheduleModal(day, lectureHours));
     };
 
     return DayScheduleModal;

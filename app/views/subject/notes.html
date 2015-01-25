@@ -1,10 +1,20 @@
-﻿<div class="note">
-    <h3 class="text-center" data-bind="text: title"></h3>
-    <div class="text-right">
-        <span class="btn" data-bind="click: saveData"><i class="fa fa-floppy-o"></i></span>
-        <span class="btn" data-bind="click: removeNotes"><i class="fa fa-trash-o"></i></span>
+﻿<div class="splash" data-bind="visible: isBusy"><i class="fa fa-spinner fa-spin"></i></div>
+
+<div class="notes" data-bind="visible: !isBusy()">
+    <div class="row heading">        
+        <div class="col-md-11">
+            <h3 class="text-right" data-bind="text: title"></h3>
+        </div>
+        <div class="col-md-1">
+            <i class="fa fa-floppy-o save" data-bind="click: saveData, popover: 'Save changes'"></i>
+        </div>
     </div>
-    <form>
-        <textarea name="editor" id="editor" rows="10" cols="80"></textarea>
-    </form>
+    <br />
+    <div class="row">
+        <div class="col-md-12">
+            <form>
+                <textarea name="editor" id="editor" data-bind="texteditor: editor"></textarea>
+            </form>
+        </div>
+    </div>
 </div>

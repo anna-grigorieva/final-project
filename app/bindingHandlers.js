@@ -1,4 +1,4 @@
-﻿define(['knockout', 'moment', 'jquery', 'jqueryui'], function (ko, moment, $) {
+﻿define(['knockout', 'moment', 'jquery', 'jqueryui', 'ckeditor'], function (ko, moment, $) {
     ko.bindingHandlers.selectDate = {
         init: function (element, valueAccessor) {
             var value = valueAccessor();
@@ -17,26 +17,29 @@
             }
         }
     };
-    ko.bindingHandlers.saveAndGoTo = {
+    ko.bindingHandlers.texteditor = {
         init: function (element, valueAccessor) {
-            var saveNewItem = valueAccessor();
+            var value = valueAccessor();
 
-            $(element).click(function () {
-                saveNewItem()
-                    .then(function (newItemId) {
-                        $('#heading' + newItemId).find('a').trigger('click');
-                    });
-            });
+            CKEDITOR.replace($(element).attr('id'));
+            value(CKEDITOR.instances.editor);
         }
     };
-    ko.bindingHandlers.cancelCreating = {
+    ko.bindingHandlers.popover = {
         init: function (element, valueAccessor) {
-            var reset = valueAccessor();
+            var value = valueAccessor();
 
-            $(element).click(function () {
-                reset();
-                $(this).closest('.panel').find('a').trigger('click');
+            $(element).popover({
+                content: value,
             });
+
+            $(element)
+                .on('mouseover', function () {
+                    $(element).popover('show');
+                })
+                .on('mouseout', function () {
+                    $(element).popover('hide');
+                })
         }
-    };
+    }
 });

@@ -1,95 +1,163 @@
-﻿define(['knockout', 'dataContext', 'userContext', 'moment', 'constructors/day', 'constructors/lecture', 'viewmodels/modals/daySchedule'], function (ko, dataContext, userContext, moment, Day, Lecture, DayScheduleModal) {
+﻿define(['durandal/app', 'knockout', 'dataContext', 'userContext', 'moment', 'Q', 'constructors/day', 'constructors/lecture', 'viewmodels/modals/daySchedule'], function (app, ko, dataContext, userContext, moment, Q, Day, Lecture, DayScheduleModal) {
     var
-        monday = ko.observable(moment({ h: 0, m: 0, s: 0, ms: 0 })),
-        week = ko.computed(function () {
-            var
-                friday = moment(monday()).day("Friday"),
-                monMonth = monday().format('MMM'),
-                friMonth = friday.format('MMM');
-
-            return monMonth + ', ' + monday().date() + ' - ' +
-                ((friMonth == monMonth) ? '' : (friMonth + ', ')) + friday.date();
-        }),
+        monday = ko.observable(moment({ h: 0, m: 0, s: 0, ms: 0 }).day("Monday")),
+        week = ko.computed(getWeekInterval),
         lectureHours = ko.observableArray(),
         days = ko.observableArray(),
-        dateSubscr;
+        dateSubscr,
+        timeToAdd = {
+            hours: ko.observable('00'),
+            minutes: ko.observable('00')
+        },
+        isBusy = ko.observable(false);
 
     return {
         monday: monday,
         lectureHours: lectureHours,
         days: days,
         week: week,
+        timeToAdd: timeToAdd,
+        isBusy: isBusy,
 
-        addTime: addTime,
-        showModalDialog: showModalDialog,
+        editDaySchedule: editDaySchedule,
+        addLectureTime: addLectureTime,
+        deleteLectureTime: deleteLectureTime,
 
+        activate: activate,
         canActivate: function () {
             return userContext.session() ? true : { redirect: 'signin' };
-        },
-        activate: function () {
-            monday(moment({ h: 0, m: 0, s: 0, ms: 0 }));
-            dateSubscr = monday.subscribe(getLectures);
-            return getLectures(monday());
         },
         deactivate: function () {
             dateSubscr.dispose();
         }
     };
 
-    function showModalDialog(day) {
-        DayScheduleModal.show(day)
-            .then(function (lectures) {
-                if (lectures) {
-                    lectures.forEach(function (updatedLecture) {
-                        var
-                            updatedData = {
-                                date: updatedLecture.date,
-                                hours: updatedLecture.hours(),
-                                minutes: updatedLecture.minutes(),
-                                lectureRoom: updatedLecture.lectureRoom(),
-                                subject: updatedLecture.subject()
-                            };
+    function activate() {
+        monday(moment({ h: 0, m: 0, s: 0, ms: 0 }).day("Monday"));
+        dateSubscr = monday.subscribe(setWeekSchedule);
 
-                        if (updatedLecture.objectId) {
-                            dataContext.update({
-                                className: 'Lecture',
-                                id: updatedLecture.objectId,
-                                data: updatedData
-                            });
-                        } else {
-                            dataContext.add({
-                                className: 'Lecture',
-                                data: updatedData
-                            }).then(function (id) {
-                                updatedLecture.objectId = id;
-                                day.lectures.push(updatedLecture);
-                                lectureHours(getTime());
-                            });
+        return dataContext.getCollection({
+            className: 'LectureTime'
+        }).then(function (recievedLectureHours) {
+            setLectureHours(recievedLectureHours);
+            return setWeekSchedule(monday());
+        });
+    }
+
+    function editDaySchedule(day) {
+        DayScheduleModal.show(day, lectureHours).then(function (isUpdateNeeded) {
+            if (isUpdateNeeded) {
+                updateData(day);
+            } else {
+                setWeekSchedule(monday());
+            }
+        });
+    }
+    function addLectureTime() {
+        var
+            newTime = timeToAdd.hours() + ':' + timeToAdd.minutes(),
+            updatedDays,
+            i;
+
+        for (i = 0; i < lectureHours().length; i++) {
+            if (lectureHours()[i].time === newTime) {
+                timeToAdd.hours('00');
+                timeToAdd.minutes('00');
+                return;
+            }
+        }
+
+        isBusy(true);
+
+        return dataContext.add({
+            className: 'LectureTime',
+            data: { time: newTime }
+        }).then(function (id) {
+            lectureHours.push({ time: newTime, objectId: id });
+            lectureHours.sort(function (first, second) {
+                first = moment(first.time, 'HH:mm');
+                second = moment(second.time, 'HH:mm');
+                return first - second;
+            });
+            for (i = 0; i < days().length; i++) {
+                days()[i].lectures[newTime] = ko.observable(new Lecture({
+                    date: days()[i].date
+                        .hours(moment(newTime, 'HH:mm').hours())
+                        .minutes(moment(newTime, 'HH:mm').minutes())
+                }));
+            }
+            updatedDays = days();
+            days([]);
+            days(updatedDays);
+            timeToAdd.hours('00');
+            timeToAdd.minutes('00');
+
+            isBusy(false);
+        });
+    }
+    function deleteLectureTime(lectureTime) {
+        var
+            lecturesToRemove = [],
+            i;
+
+        app.showMessage('Do you want to remove all lectures for this time?', '', ['No', 'Yes'], true)
+            .then(function (dialogResult) {
+                if (dialogResult == 'Yes') {
+                    isBusy(true);
+
+                    return dataContext.remove({
+                        className: 'LectureTime',
+                        id: lectureTime.objectId
+                    }).then(function () {
+                        return removeLectures();
+                    }).then(function () {
+                        lectureHours.remove(lectureTime);
+                        for (i = 0; i < days().length; i++) {
+                            delete days()[i].lectures[lectureTime.time];
                         }
-                    });
-                    day.lectures().forEach(function (oldLecture) {
-                        if (lectures.indexOf(oldLecture) == -1) {
-                            dataContext.remove({
-                                className: 'Lecture',
-                                id: oldLecture.objectId
-                            }).then(function () {
-                                day.lectures.remove(oldLecture);
-                                lectureHours(getTime());
-                            });
-                        }
+
+                        isBusy(false);
                     });
                 } else {
-                    return getLectures(day.date);
+                    return;
                 }
             });
-    }
-    function addTime() {
-        lectureHours.push(selectedTime.hours() + ':' + selectedTime.minutes());
-        selectedTime.hours('00');
-        selectedTime.minutes('00');
+
+        function removeLectures() {
+            return dataContext.getCollection({
+                className: 'Lecture'
+            }).then(function (weekLectures) {
+                for (i = 0; i < weekLectures.length; i++) {
+                    if (moment(weekLectures[i].date).format('HH:mm') === lectureTime.time) {
+                        lecturesToRemove.push(weekLectures[i]);
+                    }
+                }
+                return dataContext.removeCollection({ className: 'Lecture', items: lecturesToRemove });
+            });
+        }
     }
 
-    function getLectures(monday) {
+    function setLectureHours(recievedLectureHours) {
+        var
+            lectureTime = [],
+            i;
+
+        for (i = 0; i < recievedLectureHours.length; i++) {
+            lectureTime.push({
+                time: recievedLectureHours[i].time,
+                objectId: recievedLectureHours[i].objectId
+            });
+        }
+        lectureTime.sort(function (first, second) {
+            first = moment(first.time, 'HH:mm');
+            second = moment(second.time, 'HH:mm');
+            return first - second;
+        });
+        lectureHours(lectureTime);
+    }
+    function setWeekSchedule(monday) {
+        isBusy(true);
+
         return dataContext.getCollection({
             className: 'Lecture',
             queryConstraints: {
@@ -98,58 +166,93 @@
                     $lte: moment(monday).day("Friday")
                 }
             }
-        }).then(function (recievedLectures) {
-            if (recievedLectures.length) {
-                var
-                    observableLectures = [],
-                    number = recievedLectures.length,
-                    i;
+        }).then(function (weekLectures) {
+            setDays(monday);
+            setLectures(weekLectures);
 
-                for (i = 0; i < number; i++) {
-                    observableLectures.push(new Lecture(recievedLectures[i]));
-                }
-                days(getDays(observableLectures));
-                lectureHours(getTime());
-            } else {
-                days(getDays([]));
-                lectureHours([]);
-            }
+            isBusy(false);
         });
     }
-    function getTime() {
+    function setDays(monday) {
         var
-            daysArr = days(),
-            time = {},
-            timeArr = [],
-            t, i, j;
+            daysOfWeek = [],
+            i;
 
         for (i = 0; i < 5; i++) {
-            for (j = 0; j < daysArr[i].lectures().length; j++) {
-                time[daysArr[i].lectures()[j].time()] = true;
-            }
-        }
-        for (t in time) {
-            timeArr.push(t);
-        }
-        timeArr.sort(function (first, second) {
-            first = moment({ h: first.substr(0, 2), m: first.substr(3, 2), s: 0, ms: 0 });
-            second = moment({ h: second.substr(0, 2), m: second.substr(3, 2), s: 0, ms: 0 });
-            return first - second;
-        });
-
-        return timeArr;
-    }
-    function getDays(lectures) {
-        var computedDays = [],
-            i;
-        for (i = 1; i <= 5; i++) {
-            computedDays.push(new Day({ date: moment(monday()).day(i) }));
-        }
-        computedDays.forEach(function (day) {
-            day.lectures(ko.utils.arrayFilter(lectures, function (lecture) {
-                return lecture.date.toString() == day.date.toString();
+            daysOfWeek.push(new Day({
+                date: moment(monday).day(i + 1),
+                lectureHours: lectureHours()
             }));
+        }
+        days(daysOfWeek);
+    }
+    function setLectures(weekLectures) {
+        weekLectures.forEach(function (lecture) {
+            lecture = new Lecture(lecture);
+            days().forEach(function (day) {
+                if (day.date.format('MM/DD/YYYY') === lecture.date.format('MM/DD/YYYY')) {
+                    day.lectures[lecture.date.format('HH:mm')](lecture);
+                }
+            });
         });
-        return computedDays;
+    }
+    function updateData(day) {
+        isBusy(true);
+
+        return lectureHours()
+            .reduce(updateLectureData, Q.resolve())
+            .then(function () {
+                isBusy(false);
+            });
+
+        function updateLectureData(saveData, lectureTime) {
+            var
+                updatedLecture = day.lectures[lectureTime.time](),
+                updatedData = {
+                    subject: updatedLecture.subject(),
+                    lectureRoom: updatedLecture.lectureRoom()
+                };
+
+            return saveData.then(function () {
+                if (updatedLecture.subject() || updatedLecture.lectureRoom()) {
+                    updatedLecture.subject(updatedLecture.subject() || 'Some lecture');
+                    if (updatedLecture.objectId) {
+                        return dataContext.update({
+                            className: 'Lecture',
+                            id: updatedLecture.objectId,
+                            data: updatedData
+                        });
+                    } else {
+                        updatedData.date = updatedLecture.date;
+                        return dataContext.add({
+                            className: 'Lecture',
+                            data: updatedData
+                        }).then(function (id) {
+                            updatedData.objectId = id;
+                        });
+                    }
+                } else {
+                    if (updatedLecture.objectId) {
+                        return dataContext.remove({
+                            className: 'Lecture',
+                            id: updatedLecture.objectId
+                        }).then(function () {
+                            updatedLecture.lectureRoom('');
+                        });
+                    } else {
+                        return Q.resolve();
+                    }
+                }
+            });
+        }
+    }
+    function getWeekInterval() {
+        var
+            friday = moment(monday()).day("Friday"),
+            monMonth = monday().format('MMM'),
+            friMonth = friday.format('MMM');
+
+        return monMonth + ', ' + monday().format('Do') + ' - ' +
+            ((friMonth == monMonth) ? '' : (friMonth + ', ')) + friday.format('Do');
     }
 });

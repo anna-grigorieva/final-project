@@ -1,134 +1,62 @@
 ﻿<div class="events">
-    <h2 class="text-center">Events</h2>
-    <br />
-    <h4 data-bind="ifnot: events().length">No events...</h4>
+    <h3 class="text-center">Events</h3>
 
-    <div class="panel-group" id="eventist">
-        <!--ko foreach: events -->
-        <div class="panel panel-default">
-            <div class="panel-heading" data-bind="attr: { id: 'heading' + objectId() }">
-                <h4 class="panel-title">
-                    <a class="collapsed" data-toggle="collapse" data-parent="#eventist" data-bind="attr: { href: '#collapse' + objectId(), 'aria-controls': 'collapse' + objectId() }" aria-expanded="false">
-                        <span data-bind="text: name"></span>
-                    </a>
-                    <a href="#" data-bind="ifnot: $root.subject, attr: { href: '#subjects/' + subject() }">
-                        <span class="label label-default" data-bind="text: subject"></span>
-                    </a>
-                    <span class="pull-right">
-                        <strong data-bind="text: hours() + ':' + minutes()"></strong>
-                        <i data-bind="css: { 'fa fa-exclamation': important }"></i>
-                    </span>
-                </h4>
-            </div>
+    <div class="splash" data-bind="visible: isBusy"><i class="fa fa-spinner fa-spin"></i></div>
 
-            <div class="panel-collapse collapse" data-bind="attr: { id: 'collapse' + objectId() }">
-                <table class="table table-bordered" data-bind="ifnot: $parent.eventToEdit">
-                    <tr>
-                        <th colspan="3">Description</th>
-                        <th>Date</th>
-                    </tr>
-                    <tr>
-                        <td colspan="3" rowspan="4" data-bind="text: description"></td>
-                        <td data-bind="text: date().format('MM/DD/YYYY')"></td>
-                    </tr>
-                    <tr>
-                        <th>Impotant</th>
-                    </tr>
-                    <tr>
-                        <td data-bind="text: important() ? 'yes' : 'no'"></td>
-                    </tr>
-                    <tr>
-                        <td class="text-center">
-                            <button class="btn bth-default" data-bind="click: $parent.startEditingEvent"><i class="fa fa-pencil"></i></button>
-                            <button class="btn bth-default" data-bind="click: $parent.deleteEvent"><i class="fa fa-trash-o"></i></button>
-                        </td>
-                    </tr>
-                </table>
-                <div class="panel-body" data-bind="if: $parent.eventToEdit() == $data">
-                    <table class="table unbordered" data-bind="with: $root.eventToSave">
-                        <tr>
-                            <th colspan="3">Name</th>
-                            <th>Date</th>
-                        </tr>
-                        <tr>
-                            <td colspan="3"><input class="form-control" data-bind="value: name" /></td>
-                            <td><input class="form-control" data-bind="selectDate: date" /></td>
-                        </tr>
-                        <tr>
-                            <th colspan="3">Description</th>
-                            <th>Time</th>
-                        </tr>
-                        <tr>
-                            <td colspan="3" rowspan="4"><textarea rows="6" class="form-control" data-bind="value: description"></textarea></td>
-                            <td>
-                                <div data-bind="compose: { model: 'viewmodels/timepicker', mode: 'templated' }"></div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Impotant</th>
-                        </tr>
-                        <tr>
-                            <td><input type="checkbox" data-bind="checked: important" /></td>
-                        </tr>
-                        <tr>
-                            <td class="text-center">
-                                <button class="btn bth-default" data-bind="click: $root.updateEvent"><i class="fa fa-save"></i></button>
-                                <button class="btn bth-default" data-bind="click: $root.reset"><i class="fa fa-times"></i></button>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <!--/ko-->
-        <div class="panel panel-default">
-
-            <div id="new-event-heading" class="panel-heading add-new-item" role="tab">
-                <h4 class="panel-title">
-                    <a href="#new-event-collapse" class="collapsed" data-toggle="collapse" data-parent="#eventist">
-                        <span>
-                            <span>Add new event</span>
-                            <i class="fa fa-plus pull-right"></i>
+    <div data-bind="visible: !isBusy()">
+        <br />
+        <div class="panel-group" id="eventist">
+            <!--ko foreach: sortedEvents -->
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a class="collapsed" data-toggle="collapse" data-parent="#eventist" data-bind="attr: { href: '#collapse' + objectId() }">
+                            <span data-bind="text: name"></span>
+                            <span data-bind="visible: important">(!!!)</span>
+                        </a>
+                        <a href="#" data-bind="ifnot: $root.subject, attr: { href: '#subjects/' + subject() }">
+                            <span class="label label-default" data-bind="text: subject"></span>
+                        </a>
+                        <span class="pull-right">
+                            <span data-bind="text: moment(date()).format('HH:mm')"></span>
+                            <span data-bind="text: moment(date()).format(' MMM DD, YYYY'), visible: $root.subject"></span>
                         </span>
-                    </a>
-                </h4>
-            </div>
+                    </h4>
+                </div>
 
-            <div id="new-event-collapse" class="panel-collapse collapse">
-                <div class="panel-body">
-                    <table class="table unbordered" data-bind="with: $root.eventToSave">
+                <div class="panel-collapse collapse" data-bind="attr: { id: 'collapse' + objectId() }">
+                    <table class="table table-bordered">
                         <tr>
-                            <th colspan="3">Name</th>
+                            <th colspan="3">Description</th>
                             <th>Date</th>
                         </tr>
                         <tr>
-                            <td colspan="3"><input class="form-control" data-bind="value: name" /></td>
-                            <td><input class="form-control" data-bind="selectDate: date" /></td>
-                        </tr>
-                        <tr>
-                            <th colspan="3">Description</th>
-                            <th>Time</th>
-                        </tr>
-                        <tr>
-                            <td colspan="3" rowspan="4"><textarea rows="6" class="form-control" data-bind="value: description"></textarea></td>
-                            <td>
-                                <div data-bind="compose: { model: 'viewmodels/timepicker', mode: 'templated' }"></div>
-                            </td>
+                            <td colspan="3" rowspan="4" data-bind="text: description"></td>
+                            <td data-bind="text: date().format('MM/DD/YYYY')"></td>
                         </tr>
                         <tr>
                             <th>Impotant</th>
                         </tr>
                         <tr>
-                            <td><input type="checkbox" data-bind="checked: important" /></td>
+                            <td data-bind="text: important() ? 'yes' : 'no'"></td>
                         </tr>
                         <tr>
                             <td class="text-center">
-                                <button class="btn bth-default" data-bind="saveAndGoTo: $root.addEvent"><i class="fa fa-save"></i></button>
-                                <button class="btn bth-default" data-bind="cancelCreating: $root.reset"><i class="fa fa-times"></i></button>
+                                <button class="btn edit" data-bind="click: $parent.editEvent, popover: 'Edit'"><i class="fa fa-pencil"></i></button>
+                                <button class="btn delete" data-bind="click: $parent.deleteEvent, popover: 'Delete'"><i class="fa fa-trash-o"></i></button>
                             </td>
                         </tr>
                     </table>
                 </div>
+            </div>
+            <!--/ko-->
+            <div class="text-center" data-bind="visible: !sortedEvents().length">
+                <h4>There are no events.</h4>
+                <button class="btn edit" data-bind="click: editEvent">+ Add new event</button>
+            </div>
+            <div class="text-right" data-bind="visible: sortedEvents().length">
+                <br />
+                <button class="btn edit" data-bind="click: editEvent">+ Add new event</button>
             </div>
         </div>
     </div>

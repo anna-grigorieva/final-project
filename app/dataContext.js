@@ -4,13 +4,13 @@
             "X-Parse-Application-Id": "zbYY8JIWUi6nTHFQx4Uayesk4aUtK0hPIvVRpcGD",
             "X-Parse-REST-API-Key": "4kFIrm6AgCPTaciwt7frojWIFgiEjoCdxFWsiWMg"
         },
-        importantDays = ko.observableArray(),
-        subjects = ko.observableArray();
+        importantDays = ko.observableArray();
 
     return {
         add: add,
         update: update,
         remove: remove,
+        removeCollection: removeCollection,
         getCollection: getCollection,
         getById: getById,
 
@@ -18,19 +18,17 @@
         getImportantDays: getImportantDays,
         correctImportantDays: correctImportantDays,
 
-        subjects: subjects,
-        getSubjects: getSubjects,
-        removeSubject: removeSubject
+        doesSubjectExist: doesSubjectExist
     }
 
     function add(options) {
         var
             dfd = Q.defer(),
             url = 'https://api.parse.com/1/classes/' + options.className,
-            data = options.data;
+            data = options.data || {},
+            acl = {};
 
         if (userContext.userId()) {
-            var acl = {};
             acl[userContext.userId()] = {
                 "read": true,
                 "write": true
@@ -40,7 +38,7 @@
 
         http.post(url, data, headers)
             .done(function (response) {
-                dfd.resolve(response.objectId);
+                dfd.resolve(response.objectId, response.createdAt);
             })
             .fail(function () {
                 dfd.reject();
@@ -78,6 +76,26 @@
             });
 
         return dfd.promise;
+    }
+    function removeCollection(options) {
+        var itemsToRemove = options.items || [];
+
+        if (options.queryConstraints) {
+            return getCollection(options).then(function (recievedItems) {
+                itemsToRemove = recievedItems;
+                return removeItems();
+            });
+        } else {
+            return removeItems();
+        }
+
+        function removeItems() {
+            return itemsToRemove.reduce(function (removeItem, item) {
+                return removeItem.then(function () {
+                    return remove({ className: options.className, id: item.objectId });
+                });
+            }, Q.resolve());
+        }
     }
     function getCollection(options) {
         var
@@ -132,7 +150,10 @@
             className: 'Task',
             queryConstraints: {
                 important: true,
-                date: date
+                date: {
+                    $gte: date,
+                    $lt: moment(date).add(1, 'd')
+                }
             }
         }).then(function (importantTasks) {
             if (!importantTasks.length) {
@@ -140,7 +161,10 @@
                     className: 'Event',
                     queryConstraints: {
                         important: true,
-                        date: date
+                        date: {
+                            $gte: date,
+                            $lt: moment(date).add(1, 'd')
+                        }
                     }
                 }).then(function (importantEvents) {
                     if (!importantEvents.length) {
@@ -156,13 +180,17 @@
             firstDay = moment([newDate.year(), newDate.month(), 1]),
             lastDay = moment([newDate.year(), 0, 31]).month(newDate.month()),
             days = [],
+            eventDate,
             i;
 
         return getCollection({
             className: 'Task',
             queryConstraints: {
                 important: true,
-                date: { "$gte": firstDay, "$lte": lastDay }
+                date: {
+                    "$gte": firstDay,
+                    "$lte": lastDay
+                }
             }
         }).then(function (importantTasks) {
             for (i = 0; i < importantTasks.length; i++) {
@@ -174,13 +202,17 @@
                 className: 'Event',
                 queryConstraints: {
                     important: true,
-                    date: { "$gte": firstDay, "$lte": lastDay }
+                    date: {
+                        "$gte": firstDay,
+                        "$lt": moment(lastDay).add(1, 'd')
+                    }
                 }
             })
         }).then(function (importantEvents) {
             for (i = 0; i < importantEvents.length; i++) {
-                if (days.indexOf(importantEvents[i].date) == -1) {
-                    days.push(importantEvents[i].date);
+                eventDate = moment(importantEvents[i].date).hours(0).minutes(0).seconds(0).milliseconds(0).toJSON();
+                if (days.indexOf(eventDate) == -1) {
+                    days.push(eventDate);
                 }
             }
             importantDays(days);
@@ -188,7 +220,7 @@
         });
     }
     function correctImportantDays(itemImportant, date) {
-        date = date.toJSON();
+        date = moment(date).hours(0).minutes(0).seconds(0).milliseconds(0).toJSON();
         if (itemImportant) {
             if (importantDays.indexOf(date) == -1) {
                 importantDays.push(date);
@@ -203,55 +235,14 @@
         }
     }
 
-    function getSubjects() {
+    function doesSubjectExist(subjectName) {
         return getCollection({ className: 'Subject' })
             .then(function (recievedSubjects) {
-                var
-                    subsNames = [],
-                    len = recievedSubjects.length,
-                    name,
-                    i;
-
-                for (i = 0; i < len; i++) {
-                    subjects.push({ name: recievedSubjects[i].name, id: recievedSubjects[i].objectId });
+                for (var i = 0; i < recievedSubjects.length; i++) {
+                    if (recievedSubjects[i].name == subjectName) {
+                        return true;
+                    }
                 }
-                return subjects;
             });
     }
-    function removeSubject(subjectName) {
-        var id, i;
-        for (i = 0; i < subjects().length; i++) {
-            if (subjects()[i].name == subjectName) {
-                id = subjects()[i].id;
-                subjects.remove(subjects()[i]);
-                return remove({
-                    className: 'Subject',
-                    id: id
-                });
-            }
-        }
-    }
-
-
-    //---------------------------------------------------------//
-    function uploadFile(data) {
-        var
-            dfd = Q.defer(),
-            url = 'https://api.parse.com/1/files/conspect.html',
-            headers = {
-                "X-Parse-Application-Id": "zbYY8JIWUi6nTHFQx4Uayesk4aUtK0hPIvVRpcGD",
-                "X-Parse-REST-API-Key": "4kFIrm6AgCPTaciwt7frojWIFgiEjoCdxFWsiWMg",
-                "Content-Type": "text/html"
-            };
-
-        http.post(url, data, headers)
-            .done(function (response) {
-                dfd.resolve(response);
-            })
-            .fail(function () {
-                dfd.reject();
-            });
-
-        return dfd.promise;
-    }
-})
+});

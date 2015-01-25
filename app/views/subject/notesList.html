@@ -1,30 +1,35 @@
-﻿<div class="row">
-    <div class="col-md-8 col-md-offset-2">
-        <div class="notes">
-            <h2 class="text-center">Notes</h2>
-            <br />
-            <h4 data-bind="ifnot: notesList().length">No notes...</h4>
-            <div class="panel-group">
-                <!--ko foreach: notesList -->
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h4 class="panel-title">
-                            <a href="#" data-bind="text: title, attr: { href: '#subjects/' + $root.subject() + '/notes/' + objectId }"></a>
-                        </h4>
-                    </div>
-                </div>
-                <!--/ko-->
+﻿<div class="wrapper light-wrapper">
+    <div class="notes-list">
+        <h3 class="text-center">Notes</h3>
 
-                <div class="panel panel-default">
-                    <div id="new-notes-heading" class="panel-heading add-new-item">
-                        <h4 class="panel-title">
-                            <span data-bind="click: createNewNotes">
-                                <span>Create new notes</span>
-                                <i class="fa fa-plus pull-right"></i>
-                            </span>
-                        </h4>
-                    </div>
+        <div class="splash" data-bind="visible: isBusy"><i class="fa fa-spinner fa-spin"></i></div>
+
+        <div data-bind="visible: !isBusy()">
+            <br />
+            <!--ko foreach: notesList -->
+            <div class="row">
+                <div class="col-md-7">
+                    <strong data-bind="text: $index() + 1 + '.  ' + title"></strong>
                 </div>
+                <div class="col-md-3 text-right">
+                    <span>updated at: </span>
+                    <p data-bind="text: moment(updatedAt).format('HH:mm, MMM DD, YYYY')"></p>
+                </div>
+                <div class="col-md-2 text-right">
+                    <a href="#" class="link" data-bind="attr: { href: '#subjects/' + $root.subject() + '/notes/' + objectId }">
+                        <span class="btn edit" data-bind="popover: 'Open notes'"><i class="fa fa-file-text"></i></span>
+                    </a>
+                    <button class="btn delete" data-bind="click: $root.removeNotes, popover: 'Remove'"><i class="fa fa-trash-o"></i></button>
+                </div>
+            </div>
+            <hr class="line" />
+            <!--/ko-->
+            <div class="text-center" data-bind="visible: !notesList().length">
+                <h4>There are no notes.</h4>
+                <button class="btn edit" data-bind="click: createNewNotes">+ Create new notes</button>
+            </div>
+            <div class="text-right" data-bind="visible: notesList().length">
+                <button class="btn edit" data-bind="click: createNewNotes">+ Create new notes</button>
             </div>
         </div>
     </div>

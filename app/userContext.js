@@ -4,48 +4,44 @@
             "X-Parse-Application-Id": "zbYY8JIWUi6nTHFQx4Uayesk4aUtK0hPIvVRpcGD",
             "X-Parse-REST-API-Key": "4kFIrm6AgCPTaciwt7frojWIFgiEjoCdxFWsiWMg"
         },
-        userContext = {
-            signin: signin,
-            signup: signup,
-            logOut: logOut,
-
-            sessionTokenKey: 'LOCST_SESSION_TOKEN_KEY',
-            userIdKey: 'LOCST_USER_ID_KEY',
-            sessionToken: sessionToken,
-            userId: userId,
-            userLoggedIn: ko.observable(false),
-            session: session
-        }
-
-    return userContext;
-
-    function session() {
-        if (userContext.sessionToken() && userContext.userId()) {
-            userContext.userLoggedIn(true);
-            return true;
-        }
-        return false;
-    }
-    function sessionToken() {
-        return localStorage.getItem(userContext.sessionTokenKey);
-    }
-    function userId() {
-        return localStorage.getItem(userContext.userIdKey);
-    }
-    function signup(fullname, email, password) {
-        var dfd = Q.defer();
-
-        var url = 'https://api.parse.com/1/users/';
-
-        var user = {
-            fullname: fullname,
-            username: email,
-            password: password
+        userName = ko.observable(''),
+        sessionToken = function () { return localStorage.getItem('LOCST_SESSION_TOKEN_KEY'); },
+        userId = function () { return localStorage.getItem('LOCST_USER_ID_KEY'); },
+        session = function () {
+            if (sessionToken() && userId()) {
+                userName(localStorage.getItem('LOCST_USER_NAME_KEY') || '');
+                return true;
+            } else {
+                userName('');
+                return false;
+            }
         };
 
-        http.post(url, user, headers)
+    return {
+        session: session,
+        sessionToken: sessionToken,
+        userId: userId,
+        userName: userName,
+
+        signup: signup,
+        signin: signin,
+        logOut: logOut
+    };
+
+    function signup(username, password) {
+        var
+            dfd = Q.defer(),
+            url = 'https://api.parse.com/1/users/',
+            userData = {
+                username: username,
+                password: password
+            };
+
+        http.post(url, userData, headers)
             .done(function () {
-                dfd.resolve();
+                signin(username, password).then(function () {
+                    dfd.resolve();
+                });
             })
             .fail(function () {
                 dfd.reject();
@@ -53,27 +49,27 @@
 
         return dfd.promise;
     }
-    function signin(email, password) {
-        var dfd = Q.defer();
+    function signin(username, password) {
+        var
+            dfd = Q.defer(),
+            url = 'https://api.parse.com/1/login/',
+            userData = {
+                username: username,
+                password: password
+            };
 
-        var url = 'https://api.parse.com/1/login/';
-
-        var user = {
-            username: email,
-            password: password
-        };
-
-        http.get(url, user, headers)
+        http.get(url, userData, headers)
             .done(function (response) {
                 if (response) {
-                    localStorage.setItem(userContext.sessionTokenKey, response.sessionToken);
-                    localStorage.setItem(userContext.userIdKey, response.objectId);
-                    userContext.userLoggedIn(true);
+                    localStorage.setItem('LOCST_SESSION_TOKEN_KEY', response.sessionToken);
+                    localStorage.setItem('LOCST_USER_ID_KEY', response.objectId);
+                    localStorage.setItem('LOCST_USER_NAME_KEY', username);
+                    userName(username);
+
                     dfd.resolve();
                 } else {
                     dfd.reject();
                 }
-
             })
             .fail(function () {
                 dfd.reject();
@@ -82,8 +78,9 @@
         return dfd.promise;
     }
     function logOut() {
-        localStorage.removeItem(userContext.sessionTokenKey);
-        localStorage.removeItem(userContext.userIdKey);
-        userContext.userLoggedIn(false);
+        localStorage.removeItem('LOCST_SESSION_TOKEN_KEY');
+        localStorage.removeItem('LOCST_USER_ID_KEY');
+        localStorage.removeItem('LOCST_USER_NAME_KEY');
+        userName('');
     }
 });

@@ -1,8 +1,6 @@
 ﻿define(['knockout', 'moment', 'dataContext', 'userContext', 'constructors/card', 'jquery'], function (ko, moment, dataContext, userContext, Card, $) {
     var
         subject = ko.observable(),
-        today = moment({ hour: 0, minute: 0, seconds: 0, milliseconds: 0 }),
-
         isAnswerVisible = ko.observable(false),
         flashcards = ko.observableArray(),
         currentCard = ko.observable();
@@ -13,22 +11,15 @@
         currentCard: currentCard,
         isAnswerVisible: isAnswerVisible,
 
-        showAnswer: showAnswer,
         showNextCard: showNextCard,
         reviewCard: reviewCard,
 
-        canActivate: function () {
-            return userContext.session() ? true : { redirect: 'signin' };
-        },
         activate: function (subjectName) {
             subject(subjectName);
             return getCards();
         }
     };
-
-    function showAnswer() {
-        isAnswerVisible(true);
-    }
+        
     function showNextCard() {
         var cardsLeft = flashcards().length;
         if (cardsLeft) {
@@ -92,11 +83,10 @@
         })
     }
 
-    //--------------------------------------------------------- //
     function getCards() {
         return dataContext.getCollection({
             className: 'Flashcard',
-            queryConstraints: { deck: subject(), dueDate: { "$lte": today } }
+            queryConstraints: { deck: subject(), dueDate: { "$lte": moment() } }
         }).then(function (cards) {
             var
                 observableCards = [],

@@ -1,28 +1,23 @@
-﻿define(['knockout', 'userContext', 'plugins/router'], function (ko, userContext, router) {
+﻿define(['knockout', 'plugins/router', 'userContext'], function (ko, router, userContext) {
 
-    var viewModel = {
-        fullname: ko.observable(),
-        email: ko.observable(),
+    return {
+        username: ko.observable(),
         password: ko.observable(),
 
-        submit: submit,
-        canActivate: canActivate
-    }
+        submit: function () {
+            userContext.signup(this.username(), this.password())
+                .then(function () {
+                    router.navigate('');
+                });
+        },
 
-    return viewModel;
-
-    function canActivate() {
-        return userContext.session() ? { redirect: '' } : true;
-    }
-
-    function submit() {
-        userContext.signup(viewModel.fullname(), viewModel.email(), viewModel.password())
-            .then(function () {
-                router.navigate('');
-            })
-            .catch(function () {
-                // handle error
-            })
+        canActivate: function () {
+            return userContext.session() ? { redirect: '' } : true;
+        },
+        deactivate: function () {
+            this.username('');
+            this.password('');
+        }
     }
 
 })

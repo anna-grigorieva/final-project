@@ -1,113 +1,101 @@
-﻿define(['knockout', 'moment', 'dataContext', 'constructors/event'], function (ko, moment, dataContext, Event) {
+﻿define(['knockout', 'moment', 'dataContext', 'constructors/event', 'viewmodels/modals/editEvent'], function (ko, moment, dataContext, Event, EditEventModal) {
     var
-        today = moment({ h: 0, m: 0, s: 0, ms: 0 }),
+        events = ko.observableArray(),
+        sortedEvents = ko.computed(function () {
+            events.sort(function (first, second) {
+                return first.date() - second.date();
+            });
+            return events();
+        }),
+        subject = ko.observable(),
         selectedDate = ko.observable(),
         dateSubscr,
-        subject = ko.observable(),
-
-        events = ko.observableArray(),
-        eventToEdit = ko.observable(),
-        eventToSave = {
-            name: ko.observable('New event'),
-            description: ko.observable(''),
-            important: ko.observable(false),
-            date: ko.observable(selectedDate()),
-            hours: ko.observable('00'),
-            minutes: ko.observable('00'),
-            subject: ko.observable()
-        };
+        isBusy = ko.observable(false);
 
     return {
         subject: subject,
+        sortedEvents: sortedEvents,
+        isBusy: isBusy,
 
-        events: events,
-        eventToEdit: eventToEdit,
-        eventToSave: eventToSave,
-
-        startEditingEvent: startEditingEvent,
-        updateEvent: updateEvent,
-        addEvent: addEvent,
+        editEvent: editEvent,
         deleteEvent: deleteEvent,
-        reset: reset,
 
         activate: activate,
         detached: detached
     };
 
-    function startEditingEvent(event) {
-        eventToSave.name(event.name());
-        eventToSave.hours(event.hours());
-        eventToSave.minutes(event.minutes());
-        eventToSave.description(event.description());
-        eventToSave.date(event.date());
-        eventToSave.important(event.important());
+    function activate(activationData) {
+        var queryConstraints = {};
 
-        eventToEdit(event);
-    }
-    function updateEvent() {
-        var
-            updatedEvent = {
-                name: eventToSave.name(),
-                description: eventToSave.description(),
-                hours: eventToSave.hours(),
-                minutes: eventToSave.minutes(),
-                date: moment(eventToSave.date()),
-                important: eventToSave.important(),
-                subject: eventToSave.subject()
+        if (activationData.subject) {
+            subject(activationData.subject);
+            selectedDate(moment({ h: 0, m: 0, s: 0, ms: 0 }));
+            queryConstraints.subject = subject();
+        }
+        if (activationData.date) {
+            subject('');
+            selectedDate(activationData.date());
+            queryConstraints.date = {
+                $gte: selectedDate(),
+                $lt: moment(selectedDate()).add(1, 'd')
             };
 
-        return dataContext.update({
-            className: 'Event',
-            id: eventToEdit().objectId(),
-            data: updatedEvent
-        }).then(function () {
-                        
-            if (updatedEvent.date.toString() != eventToEdit().date().toString()) {
-                dataContext.correctImportantDays(false, eventToEdit().date());
-                dataContext.correctImportantDays(updatedEvent.important, updatedEvent.date);
+            dateSubscr = activationData.date.subscribe(function (newDate) {
+                isBusy(true);
 
-                events.remove(eventToEdit());
-            } else
-                if (updatedEvent.important != eventToEdit().important()) {
-                    dataContext.correctImportantDays(updatedEvent.important, updatedEvent.date);
-                }
+                selectedDate(newDate);
+                getEvents({
+                    date: {
+                        $gte: newDate,
+                        $lt: moment(newDate).add(1, 'd')
+                    }
+                }).then(function () {
+                    isBusy(false);
+                });
+            });
+        }
 
-            for (data in updatedEvent) {
-                eventToEdit()[data](updatedEvent[data]);
-            }
-
-            reset();
-        })
+        return getEvents(queryConstraints);
     }
-    function addEvent() {
-        var
-            createdEvent = {
-                name: eventToSave.name(),
-                description: eventToSave.description(),
-                hours: eventToSave.hours(),
-                minutes: eventToSave.minutes(),
-                date: moment(eventToSave.date()),
-                important: eventToSave.important(),
-                subject: eventToSave.subject()
-            };
+    function detached() {
+        if (dateSubscr) {
+            dateSubscr.dispose();
+        }
+        selectedDate(undefined);
+        subject(undefined);
+    }
 
-        return dataContext.add({
-            className: 'Event',
-            data: createdEvent
-        }).then(function (objectId) {
-            createdEvent.objectId = objectId;
-            events.push(new Event(createdEvent));
+    function editEvent(oldEvent) {
+        if (!oldEvent.objectId) {
+            EditEventModal.show(new Event({
+                date: selectedDate(),
+                subject: subject()
+            })).then(function (createdEvent) {
+                if (createdEvent) {
+                    isBusy(true);
 
-            if (createdEvent.important) {
-                dataContext.correctImportantDays(true, createdEvent.date);
-            }
+                    addEvent(createdEvent).then(function () {
+                        isBusy(false);
+                    });
+                }                
+            });
+        } else {
+            EditEventModal.show(oldEvent)
+                .then(function (updatedEvent) {
+                    if (updatedEvent) {
+                        isBusy(true);
 
-            reset();
-            return objectId;
-        })
+                        updateEvent(updatedEvent, oldEvent).then(function () {
+                            isBusy(false);
+                        });
+                    }
+                });
+        }
     }
     function deleteEvent(event) {
-        dataContext.remove({
+        isBusy(true);
+
+        return dataContext.remove({
             className: 'Event',
             id: event.objectId()
         }).then(function () {
@@ -116,21 +104,10 @@
             if (event.important()) {
                 dataContext.correctImportantDays(false, event.date());
             }
+            isBusy(false);
         })
     }
-    function reset() {
-        eventToSave.name('New event');
-        eventToSave.description('');
-        eventToSave.important(false);
-        eventToSave.date(selectedDate());
-        eventToSave.subject(subject());
-        eventToSave.hours('00');
-        eventToSave.minutes('00');
 
-        eventToEdit(undefined);
-    }
-
-    //--------------------------------------------------------- //
     function getEvents(queryConstraints) {
         return dataContext.getCollection({
             className: 'Event',
@@ -142,42 +119,48 @@
             for (i = 0; i < number; i++) {
                 observableEvents.push(new Event(recivedEvents[i]));
             }
+            observableEvents.sort(function (first, second) {
+                return first.date() - second.date();
+            });
             events(observableEvents);
         });
     }
+    function addEvent(createdEvent) {
+        return dataContext.add({
+            className: 'Event',
+            data: createdEvent
+        }).then(function (objectId) {
+            createdEvent.objectId = objectId;
+            events.push(new Event(createdEvent));
 
-    function activate(activationData) {
-        var queryConstraints = {};
-
-        if (activationData.subject) {
-            subject(activationData.subject);
-            selectedDate(today);
-            queryConstraints.subject = subject();
-        }
-        if (activationData.date) {
-            subject('');
-            selectedDate(activationData.date());
-            queryConstraints.date = selectedDate();
-
-            dateSubscr = activationData.date.subscribe(function (newDate) {
-                selectedDate(newDate);
-                eventToSave.date(newDate);
-                getEvents({ date: newDate });
-            });
-        }
-
-        eventToSave.date(selectedDate());
-        eventToSave.subject(subject());
-
-        return getEvents(queryConstraints);
+            if (!subject() && createdEvent.important) {
+                dataContext.correctImportantDays(true, createdEvent.date);
+            }
+            return objectId;
+        })
     }
-    function detached() {
-        if (dateSubscr) {
-            dateSubscr.dispose();
-        }
-        selectedDate(undefined);
-        subject(undefined);
+    function updateEvent(updatedEvent, oldEvent) {
+        return dataContext.update({
+            className: 'Event',
+            id: oldEvent.objectId(),
+            data: updatedEvent
+        }).then(function () {
 
-        reset();
+            if (!subject()) {
+                if (updatedEvent.date.format('MM/DD/YYYY') !== oldEvent.date().format('MM/DD/YYYY')) {
+                    dataContext.correctImportantDays(false, oldEvent.date());
+                    dataContext.correctImportantDays(updatedEvent.important, updatedEvent.date);
+
+                    events.remove(oldEvent);
+                } else
+                    if (updatedEvent.important != oldEvent.important()) {
+                        dataContext.correctImportantDays(updatedEvent.important, updatedEvent.date);
+                    }
+            }
+
+            for (var data in updatedEvent) {
+                oldEvent[data](updatedEvent[data]);
+            }
+        });
     }
 });

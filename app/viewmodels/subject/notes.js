@@ -1,39 +1,23 @@
-﻿define(['plugins/router', 'knockout', 'ckeditor', 'dataContext', 'userContext'], function (router, ko, ckeditor, dataContext, userContext) {
+﻿define(['plugins/router', 'knockout', 'dataContext', 'userContext'], function (router, ko, dataContext, userContext) {
     var
-        editor,
+        editor = ko.observable(),
         subject = ko.observable(),
         id = ko.observable(),
         title = ko.observable(),
-        data = ko.observable();
+        data = ko.observable(),
+        isBusy = ko.observable(false);
 
     return {
         title: title,
+        editor: editor,
+        isBusy: isBusy,
 
         saveData: saveData,
-        removeNotes: removeNotes,
 
-        canActivate: function () {
-            return userContext.session() ? true : { redirect: 'signin' };
-        },
         activate: activate,
-        attached: attached
+        bindingComplete: bindingComplete
     };
 
-    function saveData() {
-        dataContext.update({
-            className: 'Notes',
-            id: id(),
-            data: { subject: subject(), data: editor.getData() }
-        });
-    }
-    function removeNotes() {
-        dataContext.remove({
-            className: 'Notes',
-            id: id()
-        }).then(function () {
-            router.navigate('#subjects/'+subject()+'/allnotes');
-        });
-    }
     function activate(subjectName, objectId) {
         subject(subjectName);
         id(objectId);
@@ -46,9 +30,19 @@
             title(conspect.title);
         });
     }
-    function attached() {
-        CKEDITOR.replace('editor');
-        editor = CKEDITOR.instances.editor;
-        editor.setData(data());
+    function bindingComplete() {
+        editor().setData(data());
+    }
+
+    function saveData() {
+        isBusy(true);
+
+        return dataContext.update({
+            className: 'Notes',
+            id: id(),
+            data: { subject: subject(), data: editor().getData() }
+        }).then(function () {
+            isBusy(false);
+        });
     }
 });

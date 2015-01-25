@@ -1,18 +1,16 @@
-﻿<div class="modal-wrapper">
-    <div class="modal-content">
-        <div class="modal-header">
-            <button type="button" class="close" data-bind="click: cancel"><span>&times;</span></button>
-            <h3>New notes</h3>
-        </div>
-        <div class="modal-body new-subj">
-            <form data-bind="submit: ok">
-                <p class="message">Title:</p>
-                <input class="form-control autofocus" data-bind="value: title" required />
-                <div class="modal-footer">
-                    <button class="btn btn-default success" type="submit">Create</button>
-                    <button class="btn btn-default danger" data-bind="click: cancel">Cancel</button>
-                </div>
-            </form>
-        </div>
+﻿<div class="modal-content new-notes">
+    <div class="modal-header">
+        <button type="button" class="close" data-bind="click: cancel"><span>&times;</span></button>
+        <h3>New notes</h3>
+    </div>
+    <div class="modal-body">
+        <form data-bind="submit: ok">
+            <p class="message">Title:</p>
+            <input class="form-control autofocus" data-bind="value: title" required />
+            <div class="modal-footer">
+                <button class="btn btn-default success" type="submit">Create</button>
+                <button class="btn btn-default danger" data-bind="click: cancel">Cancel</button>
+            </div>
+        </form>
     </div>
 </div>

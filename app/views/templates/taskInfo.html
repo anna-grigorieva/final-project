@@ -1,0 +1,20 @@
+﻿<div class="row">
+    <div class="col-md-8">
+        <strong data-bind="text: $index() + 1 + '.  ' + title()"></strong>
+        <a href="#" data-bind="ifnot: $root.subject, attr: { href: '#subjects/' + subject() }">
+            <span class="label label-default" data-bind="text: subject"></span>
+        </a>
+        <div data-bind="text: description"></div>
+    </div>
+    <div class="col-md-2">
+        <span data-bind="visible: $root.subject">
+            <strong>Due date:</strong>
+            <p data-bind="text: date().format('MM/DD/YYYY')"></p>
+        </span>
+    </div>
+    <div class="col-md-2 text-right">
+        <button class="btn edit" data-bind="click: $parent.editTask, popover: 'Edit'"><i class="fa fa-pencil"></i></button>
+        <button class="btn delete" data-bind="click: $parent.deleteTask, popover: 'Remove'"><i class="fa fa-trash-o"></i></button>
+    </div>
+</div>
+<hr class="line" />

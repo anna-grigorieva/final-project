@@ -1,24 +1,23 @@
 ﻿define(['knockout', 'plugins/router', 'userContext'], function (ko, router, userContext) {
 
-    var vm = {
-        email: ko.observable(),
+    return {
+        username: ko.observable(),
         password: ko.observable(),
-        submit: submit,
 
-        canActivate: canActivate
-    }
+        submit: function () {
+            userContext.signin(this.username(), this.password())
+                .then(function () {
+                    router.navigate('');
+                });
+        },
 
-    return vm;
-
-    function canActivate() {
-        return userContext.session() ? { redirect: '' } : true;
-    }
-
-    function submit() {
-        userContext.signin(vm.email(), vm.password())
-            .then(function () {
-                router.navigate('');
-            });
+        canActivate: function () {
+            return userContext.session() ? { redirect: '' } : true;
+        },
+        deactivate: function () {
+            this.username('');
+            this.password('');
+        }
     }
 
 })

@@ -1,0 +1,39 @@
+﻿<div class="row">
+    <div class="col-md-4">
+        <div class="schedule-small">
+            <h3 class="text-center">Schedule</h3>
+
+            <div class="splash small" data-bind="visible: isBusy"><i class="fa fa-spinner fa-spin"></i></div>
+
+            <table class="table table-stripped" data-bind="visible: !isBusy()">
+                <tr>
+                    <th colspan="5"></th>
+                </tr>
+                <tr data-bind="ifnot: lectures().length">
+                    <td colspan="5"><h4 class="text-center">There are no lectures for this day.</h4></td>
+                </tr>
+                <!--ko foreach: lectures -->
+                <tr>
+                    <td data-bind="text: moment(date).format('HH:mm')"></td>
+                    <td colspan="3" data-bind="text: subject"></td>
+                    <td class="text-right" data-bind="text: lectureRoom"></td>
+                </tr>
+                <!--/ko-->
+            </table>
+        </div>
+        <br />
+        <div data-bind="compose: 'templates/calendar.html'"></div>
+    </div>
+    <div class="col-md-8">
+        <h3 class="text-right selected-date" data-bind="text: selectedDate().format('MMM DD, YYYY')"></h3>
+        <div class="wrapper light-wrapper">
+            <div class="row">
+                <div class="col-md-12" data-bind="compose: { model: 'viewmodels/tasks', activationData: { date: selectedDate } }"></div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-12" data-bind="compose: { model: 'viewmodels/events', activationData: { date: selectedDate } }"></div>
+            </div>
+        </div>
+    </div>
+</div>
