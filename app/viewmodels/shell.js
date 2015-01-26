@@ -2,6 +2,7 @@
     var
         newSubject = ko.observable(),
         isBusy = ko.observable(false),
+        removingSubjectData = ko.observable(false),
         subjects = ko.observableArray();
 
     return {
@@ -9,7 +10,8 @@
         subjects: subjects,
         userName: userContext.userName,
         isBusy: isBusy,
-
+        removingSubjectData: removingSubjectData,
+        
         refreshSubjects: refreshSubjects,
         addNewSubject: addNewSubject,
         removeSubject: removeSubject,
@@ -60,7 +62,12 @@
         app.showMessage('Do you want to remove this subject and all related data?', '', ['No', 'Yes'], true)
             .then(function (dialogResult) {
                 if (dialogResult == 'Yes') {
-                    isBusy(true);
+                    var
+                        currantRoute = router.activeInstruction().fragment,
+                        redirectNeeded = (currantRoute === 'subjects/' + subject.name ||
+                                         ~currantRoute.indexOf('subjects/' + subject.name + '/'));
+
+                    removingSubjectData(redirectNeeded || false);
 
                     return dataContext.remove({
                         className: 'Subject',
@@ -76,7 +83,10 @@
                     }).then(function () {
                         subjects.remove(subject);
 
-                        isBusy(false);
+                        if (redirectNeeded) {
+                            removingSubjectData(false);
+                            router.navigate('');
+                        }
                     });
                 } else {
                     return;

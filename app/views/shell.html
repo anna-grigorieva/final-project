@@ -60,11 +60,12 @@
 
     <div data-bind="css: { 'wrapper dark-wrapper': userName }">
 
-        <div class="splash vertical-middle" data-bind="visible: router.isNavigating">
+        <div class="splash vertical-middle" data-bind="visible: router.isNavigating() || removingSubjectData()">
+            <div class="message" data-bind="visible: removingSubjectData()">Removing subject data...</div>
             <i class="fa fa-spinner fa-spin"></i>
         </div>
 
-        <div data-bind="visible: !router.isNavigating(), router: {}"></div>
+        <div data-bind="visible: !router.isNavigating() && !removingSubjectData(), router: {}"></div>
 
     </div>
 
