@@ -71,6 +71,7 @@
                         className: 'Subject',
                         id: subject.objectId
                     }).then(function () {
+                        subjects.remove(subject);
                         removingSubjectData(true);
                         return dataContext.removeCollection({ className: 'Task', queryConstraints: { subject: subject.name } });
                     }).then(function () {
@@ -80,12 +81,8 @@
                     }).then(function () {
                         return dataContext.removeCollection({ className: 'Flashcards', queryConstraints: { deck: subject.name } });
                     }).then(function () {
-                        subjects.remove(subject);
-
-                        if (redirectNeeded) {
-                            removingSubjectData(false);
-                            router.navigate('');
-                        }
+                        removingSubjectData(false);
+                        if (redirectNeeded) { router.navigate(''); }
                     });
                 } else {
                     return;

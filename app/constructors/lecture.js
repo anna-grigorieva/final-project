@@ -3,7 +3,7 @@
         this.date = moment(data.date);
         this.lectureRoom = ko.observable(data.lectureRoom || '');
         this.subject = ko.observable(data.subject || '');
-        this.objectId = data.objectId || '';
+        this.objectId = ko.observable(data.objectId || '');
     };
 
     return Lecture;

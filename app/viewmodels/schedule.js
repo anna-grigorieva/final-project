@@ -214,12 +214,12 @@
                 };
 
             return saveData.then(function () {
-                if (updatedLecture.subject() || updatedLecture.lectureRoom()) {
-                    updatedLecture.subject(updatedLecture.subject() || 'Some lecture');
-                    if (updatedLecture.objectId) {
+                if (updatedData.subject || updatedData.lectureRoom) {
+                    updatedData.subject = updatedData.subject || 'Some lecture';
+                    if (updatedLecture.objectId()) {
                         return dataContext.update({
                             className: 'Lecture',
-                            id: updatedLecture.objectId,
+                            id: updatedLecture.objectId(),
                             data: updatedData
                         });
                     } else {
@@ -228,16 +228,16 @@
                             className: 'Lecture',
                             data: updatedData
                         }).then(function (id) {
-                            updatedData.objectId = id;
+                            updatedLecture.objectId(id);
                         });
                     }
                 } else {
-                    if (updatedLecture.objectId) {
+                    if (updatedLecture.objectId()) {
                         return dataContext.remove({
                             className: 'Lecture',
-                            id: updatedLecture.objectId
+                            id: updatedLecture.objectId()
                         }).then(function () {
-                            updatedLecture.lectureRoom('');
+                            updatedLecture.objectId('');
                         });
                     } else {
                         return Q.resolve();
