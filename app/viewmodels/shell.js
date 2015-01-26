@@ -53,7 +53,7 @@
             data: { name: newSubject() }
         }).then(function (objectId) {
             router.navigate('subjects/' + newSubject());
-            subjects.push({ name: newSubject(), id: objectId });
+            subjects.push({ name: newSubject(), objectId: objectId });
             subjects.sort(function (a, b) { return a.name.localeCompare(b.name); });
             newSubject('');
         });
@@ -66,13 +66,12 @@
                         currantRoute = router.activeInstruction().fragment,
                         redirectNeeded = (currantRoute === 'subjects/' + subject.name ||
                                          ~currantRoute.indexOf('subjects/' + subject.name + '/'));
-
-                    removingSubjectData(redirectNeeded || false);
-
+                    
                     return dataContext.remove({
                         className: 'Subject',
                         id: subject.objectId
                     }).then(function () {
+                        removingSubjectData(true);
                         return dataContext.removeCollection({ className: 'Task', queryConstraints: { subject: subject.name } });
                     }).then(function () {
                         return dataContext.removeCollection({ className: 'Event', queryConstraints: { subject: subject.name } });
