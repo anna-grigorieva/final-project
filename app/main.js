@@ -4,12 +4,14 @@
         'durandal': '../lib/durandal',
         'plugins': '../lib/durandal/plugins',
         'knockout': '../lib/knockout-3.1.0',
-        'bootstrap': '../lib/bootstrap.min',
-        'jquery': '../lib/jquery-1.9.1.min',
-        'jqueryui': '../lib/jquery-ui.min',
-        'ckeditor': '../lib/ckeditor/ckeditor',
+        'bootstrap': '../lib/bootstrap/bootstrap.min',
+        'jquery': '../lib/jquery-2.1.1.min',
+        'jqueryui': '../lib/jquery-ui/jquery-ui.min',
+        'Q': '../lib/q.min',
         'moment': '../lib/moment.min',
-        'Q': '../lib/q.min'
+        'ckeditor': '../lib/ckeditor/ckeditor',
+        'en': '../lib/ckeditor/lang/en',
+        'styles': '../lib/ckeditor/styles'
     },
     shim: {
         'bootstrap': {
