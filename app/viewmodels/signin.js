@@ -1,4 +1,4 @@
-﻿define(['knockout', 'plugins/router', 'userContext'], function (ko, router, userContext) {
+﻿define(['durandal/app', 'knockout', 'plugins/router', 'userContext'], function (app, ko, router, userContext) {
 
     return {
         username: ko.observable(),
@@ -8,6 +8,9 @@
             userContext.signin(this.username(), this.password())
                 .then(function () {
                     router.navigate('');
+                })
+                .catch(function () {
+                    app.showMessage('Wrong username or password!', '', ['OK'], true);
                 });
         },
 
