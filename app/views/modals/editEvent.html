@@ -10,9 +10,7 @@
                 Description:<p><textarea class="form-control" data-bind="value: description"></textarea></p>
             </div>
             <div class="col-md-4">
-                <!--ko if: subject -->
                 Date:<p><input class="form-control" data-bind="selectDate: date" /></p>
-                <!--/ko-->
                 Time:<div data-bind="compose: { model: 'viewmodels/timepicker', mode: 'templated' }"></div>
                 Impotant:<p><input type="checkbox" data-bind="checked: important" /></p>
             </div>

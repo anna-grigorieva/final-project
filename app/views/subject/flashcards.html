@@ -1,9 +1,4 @@
 ﻿<div class="wrapper light-wrapper flashcards">
-    <div class="pull-right">
-        <a data-bind="attr: { href: '#subjects/' + subject() + '/deck' }">
-            <i class="fa fa-language deck-link" data-bind="popover: 'View deck'"></i>
-        </a>
-    </div>
     <div class="row">
         <div class="col-md-8 col-md-offset-2 text-center">
             <h3>Flashcards</h3>
@@ -45,6 +40,12 @@
                     <span class="easy">Easy</span>
                 </div>
             </div>
+        </div>
+
+        <div class="col-md-2 text-center">
+            <a data-bind="attr: { href: '#subjects/' + subject() + '/deck' }">
+                <i class="fa fa-language deck-link" data-bind="popover: 'View deck'"></i>
+            </a>
         </div>
     </div>
 </div>
