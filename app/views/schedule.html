@@ -20,41 +20,42 @@
             <!--/ko-->
         </div>
 
-        <!--ko foreach: { data: lectureHours, as: 'currentLecture' }-->
-        <div class="row schedule-row">
-            <div class="col-xs-1">
-                <strong data-bind="text: time"></strong>
-            </div>
-            <!--ko foreach: $root.days -->
-            <div class="col-xs-2 editable" data-bind="click: $root.editDaySchedule">
-                <div class="lecture" data-bind="with: lectures[currentLecture.time]">
-                    <div data-bind="text: subject"></div>
-                    <div class="lecture-room" data-bind="text: lectureRoom"></div>
+        <div class="schedule-table">
+            <!--ko foreach: { data: lectureHours, as: 'currentLecture' }-->
+            <div class="row schedule-row">
+                <div class="col-xs-1">
+                    <strong data-bind="text: time"></strong>
+                </div>
+                <!--ko foreach: $root.days -->
+                <div class="col-xs-2 editable" data-bind="click: $root.editDaySchedule">
+                    <div class="lecture" data-bind="with: lectures[currentLecture.time]">
+                        <div data-bind="text: subject"></div>
+                        <div class="lecture-room" data-bind="text: lectureRoom"></div>
+                    </div>
+                </div>
+                <!--/ko-->
+                <div class="col-xs-1">
+                    <i class="fa fa-times remove" data-bind="click: $root.deleteLectureTime, popover: 'Remove lecture time'"></i>
                 </div>
             </div>
             <!--/ko-->
-            <div class="col-xs-1">
-                <i class="fa fa-times remove" data-bind="click: $root.deleteLectureTime, popover: 'Remove lecture time'"></i>
-            </div>
-        </div>
-        <!--/ko-->
 
-        <!--ko ifnot: lectureHours().length-->
-        <!--ko foreach: [0,1,2,3] -->
-        <div class="row schedule-row">
-            <div class="col-xs-1">
-                <strong data-bind="text: '--:--'"></strong>
+            <!--ko ifnot: lectureHours().length-->
+            <!--ko foreach: [0,1,2,3] -->
+            <div class="row schedule-row">
+                <div class="col-xs-1">
+                    <strong data-bind="text: '--:--'"></strong>
+                </div>
             </div>
-        </div>
-        <!--/ko-->
-        <div class="row schedule-row">
-            <div class="col-xs-10 col-xs-offset-1">
-                <span>Schedule is empty. Create lecture time and add lectures to your schedule.</span>
+            <!--/ko-->
+            <div class="row schedule-row">
+                <div class="col-xs-10 col-xs-offset-1">
+                    <span>Schedule is empty. Create lecture time and add lectures to your schedule.</span>
+                </div>
             </div>
+            <!--/ko-->
         </div>
-        <!--/ko-->
 
-        <br />
         <div class="row add-time">
             <div class="col-xs-1 text-right clock">
                 <i class="fa fa-clock-o"></i>

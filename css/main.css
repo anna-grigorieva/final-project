@@ -16,12 +16,13 @@ body {
     -moz-border-radius: 3px;
     border-radius: 3px;
     padding-bottom: 40px;
+    min-height: 600px;
 }
 .light-wrapper {
     background-color: rgba(248, 228, 221, 0.9);
     width: 98%;
     margin: 0 1%;
-    min-height: 450px;
+    min-height: 500px;
 }
 .navbar-inverse {
     -webkit-box-shadow: 0px 0px 4px 3px rgba(0,0,0,0.5);
@@ -51,12 +52,16 @@ body {
     background-color: #117562;
     color: lightgray;
 }
+.sign-in .success {
+    font-weight: bold;
+}
 .blue-btn {
-    background-color: rgba(14, 89, 118, 0.5);
-    color: lightgray;
+    background-color: rgba(14, 89, 118, 0.3);
+    color: gray;
+    border-color: gray;
 }
 .blue-btn:hover {
-    background-color: #376188;
+    background-color: rgba(55, 97, 136, 0.7);
     color: white;
 }
 .danger:hover {
@@ -81,7 +86,7 @@ body {
 .lecture-room {
     color: #a3bac4;
 }
-.selected-date, .schedule-small, .calendar {
+.selected-date, .schedule-small, .calendar, h4.subject {
     text-shadow: 4px 2px 3px rgba(0, 0, 0, 1);
     color: rgba(255, 255, 255, 0.8);
 }
@@ -123,10 +128,10 @@ body {
     color: #802b3a;
     cursor: pointer;
 }
-.subj-dropdown li:hover a, .subj-dropdown a:hover {
+.subj-dropdown li:hover a, .subj-dropdown a:hover, .subj-dropdown > li > a:focus {
     background-color: transparent;
 }
-.subj-dropdown li:hover, .subj-dropdown > li > a:focus {
+.subj-dropdown li:hover {
     background-color: rgba(255, 255, 255, 0.3);
 }
 .add-subj input, .add-subj button {
@@ -153,19 +158,24 @@ body {
 }
 .schedule .row {
     text-align: center;
-    padding: 10px;
-    padding-top: 7px;
 }
 .schedule .table-heading {
     border-bottom: 2px solid rgba(14, 89, 118, 0.5);
     min-height: 30px;
 }
+.schedule .schedule-table {
+    min-height: 250px;
+}
 .schedule .schedule-row {
     border-top: 2px solid rgba(255, 255, 255, 0.3);
     min-height: 60px;
 }
+.schedule .schedule-row .col-xs-1 {
+    padding-top: 20px;
+}
 .schedule .schedule-row .col-xs-2 {
-    min-height: 40px;
+    min-height: 60px;
+    padding: 10px;
 }
 .schedule .lecture {
     background-color: #998b8e;
@@ -183,6 +193,7 @@ body {
     border-top: 2px solid rgba(14, 89, 118, 0.4);
     background-color: rgba(255, 255, 255, 0.2);
     color: #998b91;
+    padding: 10px;
 }
 .add-time .btn{
     background-color: #ede0db;
@@ -301,6 +312,7 @@ body {
     cursor: pointer;
 }
 .save {
+    margin-top: 8px;
     margin-left: 10px;
     color: #adadad;
     font-size: 16pt;
@@ -361,7 +373,6 @@ body {
     margin-top: 0;
 }
 h4.subject {
-    color: whitesmoke;
     margin: 5px 0 15px 0;
     padding-left: 30px;
 }
@@ -443,7 +454,7 @@ table td{
     border: none;
 }
 .cke_contents.cke_reset {
-    height: 500px !important;
+    min-height: 550px !important;
 }
 
 /* cards */
