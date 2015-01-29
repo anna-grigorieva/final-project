@@ -21,7 +21,7 @@
     }
 });
 
-define(['durandal/system', 'durandal/app', 'durandal/viewLocator', 'bindingHandlers'], function (system, app, viewLocator, bindingHandlers) {
+define(['durandal/system', 'durandal/app', 'plugins/dialog', 'durandal/viewLocator', 'bindingHandlers'], function (system, app, dialog, viewLocator, bindingHandlers) {
     //>>excludeStart("build", true)
     system.debug(true);
     //>>excludeEnd("build")
@@ -31,6 +31,9 @@ define(['durandal/system', 'durandal/app', 'durandal/viewLocator', 'bindingHandl
         router: true,
         dialog: true
     });
+
+    dialog.MessageBox.setDefaults({ buttonClass: 'btn', primaryButtonClass: "success", secondaryButtonClass: "danger" });
+
     app.start().then(function () {
         viewLocator.useConvention();
         app.setRoot('viewmodels/shell');

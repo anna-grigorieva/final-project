@@ -1,4 +1,4 @@
-﻿<div class="modal-content">
+﻿<div class="modal-light modal-content day-schedule">
 
     <div class="modal-header">
         <button type="button" class="close" data-bind="click: close"><span>&times;</span></button>
@@ -6,16 +6,16 @@
         <h4 data-bind="text: date.format('MM/DD/YYYY')"></h4>
     </div>
 
-    <div class="modal-body day-schedule">
+    <div class="modal-body">
         <div class="row text-center">
-            <div class="col-xs-2 col-xs-offset-1"><strong>Time</strong></div>
-            <div class="col-xs-4"><strong>Subject</strong></div>
-            <div class="col-xs-3"><strong>Lecture Room</strong></div>
+            <div class="col-xs-2 col-xs-offset-1"><span>Time</span></div>
+            <div class="col-xs-4"><span>Subject</span></div>
+            <div class="col-xs-3"><span>Lecture Room</span></div>
         </div>
         <!--ko foreach: { data: lectureHours, as: 'currentLecture' } -->
         <div class="row lecture-time" data-bind="with: $root.lectures[currentLecture.time]">
             <div class="col-xs-1 text-right">
-                <strong data-bind="text: $index() + 1 + '.'"></strong>
+                <span data-bind="text: $index() + 1 + '.'"></span>
             </div>
             <div class="col-xs-2">
                 <div class="btn-group time-btn">
@@ -39,8 +39,8 @@
     <div class="modal-footer">
         <div class="row text-right">
             <div class="col-xs-11">
-                <button class="btn btn-default success" data-bind="click: save">Save</button>
-                <button class="btn btn-default danger" data-bind="click: close">Cancel</button>
+                <button class="btn success" data-bind="click: save">Save</button>
+                <button class="btn danger" data-bind="click: close">Cancel</button>
             </div>
         </div>
     </div>

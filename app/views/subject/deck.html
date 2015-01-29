@@ -34,7 +34,7 @@
             </thead>
             <tbody data-bind="foreach: flashcards">
                 <tr>
-                    <td data-bind="text: $index() + 1"></td>
+                    <td data-bind="text: $index() + 1 +'.'"></td>
                     <td colspan="2" class="editable" data-bind="click: $root.editCard"><span data-bind="    text: front"></span></td>
                     <td colspan="3" class="editable" data-bind="click: $root.editCard"><span data-bind="    text: back"></span></td>
                     <td data-bind="text: dueDate().format('DD/MM/YYYY')"></td>

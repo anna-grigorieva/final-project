@@ -1,5 +1,4 @@
-﻿/* wrappers */
-body {
+﻿body {
     background: url(images/font-dark.png) repeat;
     background-color: #5c565f;
 }
@@ -44,34 +43,6 @@ body {
     height: 1px;
     margin: 15px 0 25px 0;
 }
-.danger {
-    background-color: #a21a1a;
-    color: lightgray;
-}
-.success {
-    background-color: #117562;
-    color: lightgray;
-}
-.sign-in .success {
-    font-weight: bold;
-}
-.blue-btn {
-    background-color: rgba(14, 89, 118, 0.3);
-    color: gray;
-    border-color: gray;
-}
-.blue-btn:hover {
-    background-color: rgba(55, 97, 136, 0.7);
-    color: white;
-}
-.danger:hover {
-    background-color:#a22f2f;
-    color:white;
-}
-.success:hover {
-    background-color: #378879;
-    color: white;
-}
 .time-btn {
     width: 100px;
     color: gray;
@@ -82,9 +53,6 @@ body {
     height: 130px;
     overflow-y:auto;
     text-align:center;
-}
-.lecture-room {
-    color: #a3bac4;
 }
 .selected-date, .schedule-small, .calendar, h4.subject {
     text-shadow: 4px 2px 3px rgba(0, 0, 0, 1);
@@ -128,7 +96,7 @@ body {
     color: #802b3a;
     cursor: pointer;
 }
-.subj-dropdown li:hover a, .subj-dropdown a:hover, .subj-dropdown > li > a:focus {
+.subj-dropdown li:hover a, .subj-dropdown .loading:hover, .subj-dropdown a:hover, .subj-dropdown > li > a:focus {
     background-color: transparent;
 }
 .subj-dropdown li:hover {
@@ -167,7 +135,7 @@ body {
     min-height: 250px;
 }
 .schedule .schedule-row {
-    border-top: 2px solid rgba(255, 255, 255, 0.3);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3);
     min-height: 60px;
 }
 .schedule .schedule-row .col-xs-1 {
@@ -215,8 +183,11 @@ body {
 .add-time .add-btn:hover {
     color: #28435b;
 }
+.lecture-room {
+    color: #a3bac4;
+}
 
-/* panel */
+/* panels */
 .panel-heading {
     padding: 12px 20px !important;
     background-color: rgb(248, 243, 226) !important;
@@ -234,7 +205,27 @@ body {
 
 /* modals */
 .modal-content {
-    min-width: 300px;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    background-color: rgba(29, 30, 31, 0.9);
+    border-color: rgba(245, 245, 245, 0.15);
+    color: rgba(255, 255, 255, 0.8);
+    width: 200px;
+}
+.modal-header {
+    display: none;
+    color: rgba(255, 255, 255, 0.6);
+}
+.modal-body {
+    margin: 20px;
+    margin-top: 30px;
+    font-size: 18px;
+}
+.modal-footer {
+    border-top-color: rgba(255, 255, 255, 0.4);
+}
+.modal-light.modal-content {
     background-image: -webkit-gradient(
 	    linear,
 	    left bottom,
@@ -246,30 +237,34 @@ body {
     background-image: -moz-linear-gradient(right top, #EBDFD1 0%, #D4C1C1 100%);
     background-image: -webkit-linear-gradient(right top, #EBDFD1 0%, #D4C1C1 100%);
     background-image: -ms-linear-gradient(right top, #EBDFD1 0%, #D4C1C1 100%);
-    background-image: linear-gradient(to right top, #EBDFD1 0%, #D4C1C1 100%);
-    -webkit-border-radius: 3px;
-    -moz-border-radius: 3px;
-    border-radius: 3px;
+    background-image: linear-gradient(to right top, #EBDFD1 0%, #D4C1C1 100%);       
     color: #5f565a;
 }
-.modal-header {
-    border-bottom: 1px solid black;
-    color: black;
+.modal-light .modal-header {
+    display: block;
+    border-bottom: 1px solid rgba(0,0,0,0.6);
+    color: rgba(0,0,0,0.6);
 }
 .edit-task, .edit-event {
-    min-width: 400px;
+    width: 500px;
 }
 .new-notes {
-    min-width: 350px;
+    width: 350px;
 }
 .day-schedule {
-    width: 550px;
+    width: 600px;
+}
+.edit-task .modal-body, .edit-event .modal-body, .new-notes .modal-body, .day-schedule .modal-body {
+    margin: 0;
+}
+.day-schedule .modal-body {
     min-height: 200px;
 }
 
 /* 404 modal */
 .not-found {
     height: 250px;
+    width: auto;
     background-image: none;
     background-color: rgba(151, 42, 61, 0.6);
     color: rgba(255, 255, 255, 0.7);
@@ -295,6 +290,36 @@ body {
 }
 
 /* links and buttons */
+.danger, .success {
+    color: lightgray;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+.danger {
+    background-color: #a21a1a;
+}
+.success {
+    background-color: #117562;
+}
+.sign-in .success {
+    font-weight: bold;
+}
+.blue-btn {
+    background-color: rgba(14, 89, 118, 0.3);
+    color: gray;
+    border-color: gray;
+}
+.blue-btn:hover {
+    background-color: rgba(55, 97, 136, 0.7);
+    color: white;
+}
+.danger:hover {
+    background-color: #a22f2f;
+    color: white;
+}
+.success:hover {
+    background-color: #378879;
+    color: white;
+}
 .button, .edit, .delete, .clear {
     color: #463539;
     cursor: pointer;
@@ -387,13 +412,15 @@ table td{
 .unbordered td, .unbordered th {
     border: none !important;
 }
-.calendar th, .deck th{
-    border-width: 3px !important;
-    border-color: #5f565a !important;
-}
-.calendar td, .schedule-small td, .deck td {
+.calendar th, .deck th, .calendar td, .schedule-small td, .deck td{
     border-width: 2px !important;
     border-color: #5f565a !important;
+}
+.calendar th, .deck th {
+    border-width: 3px !important;
+}
+.deck th, .deck td {
+    border-color: rgba(56, 51, 53, 0.4) !important;
 }
 .schedule-small th{
     border-top: none !important;

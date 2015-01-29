@@ -25,7 +25,7 @@
                         <i class="fa fa-book"></i> Subjects <span class="caret"></span>
                     </a>
                     <ul class="dropdown-menu subj-dropdown" role="menu">
-                        <li data-bind="visible: isBusy"><div class="splash small"><i class="fa fa-spinner fa-spin"></i></div></li>
+                        <li class="loading" data-bind="visible: isBusy"><div class="splash small"><i class="fa fa-spinner fa-spin"></i></div></li>
 
                         <!--ko foreach: subjects-->
                         <li>

@@ -31,7 +31,7 @@
                 <div data-bind="visible: $root.isAnswerVisible">
                     <div class="card card-back" data-bind="text: back"></div>
                     <span class="hard">Hard</span>
-                    <span data-bind="foreach: [0, 1, 2]">
+                    <span data-bind="foreach: [1, 2]">
                         <button class="btn button hard" data-bind="text: $data, click: $root.reviewCard"></button>
                     </span>
                     <span data-bind="foreach: [3, 4, 5]">
