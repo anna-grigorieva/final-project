@@ -3250,6 +3250,577 @@ define('durandal/app',['durandal/system', 'durandal/viewEngine', 'durandal/compo
     return app;
 });
 
+/**
+ * Durandal 2.1.0 Copyright (c) 2012 Blue Spire Consulting, Inc. All Rights Reserved.
+ * Available via the MIT license.
+ * see: http://durandaljs.com or https://github.com/BlueSpire/Durandal for details.
+ */
+/**
+ * The dialog module enables the display of message boxes, custom modal dialogs and other overlays or slide-out UI abstractions. Dialogs are constructed by the composition system which interacts with a user defined dialog context. The dialog module enforced the activator lifecycle.
+ * @module dialog
+ * @requires system
+ * @requires app
+ * @requires composition
+ * @requires activator
+ * @requires viewEngine
+ * @requires jquery
+ * @requires knockout
+ */
+define('plugins/dialog',['durandal/system', 'durandal/app', 'durandal/composition', 'durandal/activator', 'durandal/viewEngine', 'jquery', 'knockout'], function (system, app, composition, activator, viewEngine, $, ko) {
+    var contexts = {},
+        dialogCount = ko.observable(0),
+        dialog;
+
+    /**
+     * Models a message box's message, title and options.
+     * @class MessageBox
+     */
+    var MessageBox = function (message, title, options, autoclose, settings) {
+        this.message = message;
+        this.title = title || MessageBox.defaultTitle;
+        this.options = options || MessageBox.defaultOptions;
+        this.autoclose = autoclose || false;
+        this.settings = $.extend({}, MessageBox.defaultSettings, settings);
+    };
+
+    /**
+     * Selects an option and closes the message box, returning the selected option through the dialog system's promise.
+     * @method selectOption
+     * @param {string} dialogResult The result to select.
+     */
+    MessageBox.prototype.selectOption = function (dialogResult) {
+        dialog.close(this, dialogResult);
+    };
+
+    /**
+     * Provides the view to the composition system.
+     * @method getView
+     * @return {DOMElement} The view of the message box.
+     */
+    MessageBox.prototype.getView = function () {
+        return viewEngine.processMarkup(MessageBox.defaultViewMarkup);
+    };
+
+    /**
+     * Configures a custom view to use when displaying message boxes.
+     * @method setViewUrl
+     * @param {string} viewUrl The view url relative to the base url which the view locator will use to find the message box's view.
+     * @static
+     */
+    MessageBox.setViewUrl = function (viewUrl) {
+        delete MessageBox.prototype.getView;
+        MessageBox.prototype.viewUrl = viewUrl;
+    };
+
+    /**
+     * The title to be used for the message box if one is not provided.
+     * @property {string} defaultTitle
+     * @default Application
+     * @static
+     */
+    MessageBox.defaultTitle = app.title || 'Application';
+
+    /**
+     * The options to display in the message box if none are specified.
+     * @property {string[]} defaultOptions
+     * @default ['Ok']
+     * @static
+     */
+    MessageBox.defaultOptions = ['Ok'];
+
+    
+    MessageBox.defaultSettings = { buttonClass: "btn btn-default", primaryButtonClass: "btn-primary autofocus", secondaryButtonClass: "", "class": "modal-content messageBox", style: null };
+
+    /**
+    * Sets the classes and styles used throughout the message box markup.
+    * @method setDefaults
+    * @param {object} settings A settings object containing the following optional properties: buttonClass, primaryButtonClass, secondaryButtonClass, class, style.
+    */
+    MessageBox.setDefaults = function (settings) {
+        $.extend(MessageBox.defaultSettings, settings);
+    };
+
+    MessageBox.prototype.getButtonClass = function ($index) {
+        var c = "";
+        if (this.settings) {
+            if (this.settings.buttonClass) {
+                c = this.settings.buttonClass;
+            }
+            if ($index() === 0 && this.settings.primaryButtonClass) {
+                if (c.length > 0) {
+                    c += " ";
+                }
+                c += this.settings.primaryButtonClass;
+            }
+            if ($index() > 0 && this.settings.secondaryButtonClass) {
+                if (c.length > 0) {
+                    c += " ";
+                }
+                c += this.settings.secondaryButtonClass;
+            }
+        }
+        return c;
+    };
+
+    MessageBox.prototype.getClass = function () {
+        if (this.settings) {
+            return this.settings["class"];
+        }
+        return "messageBox";
+    };
+
+    MessageBox.prototype.getStyle = function () {
+        if (this.settings) {
+            return this.settings.style;
+        }
+        return null;
+    };
+
+    MessageBox.prototype.getButtonText = function (stringOrObject) {
+        var t = $.type(stringOrObject);
+        if (t === "string") {
+            return stringOrObject;
+        }
+        else if (t === "object") {
+            if ($.type(stringOrObject.text) === "string") {
+                return stringOrObject.text;
+            } else {
+                system.error('The object for a MessageBox button does not have a text property that is a string.');
+                return null;
+            }
+        }
+        system.error('Object for a MessageBox button is not a string or object but ' + t + '.');
+        return null;
+    };
+
+    MessageBox.prototype.getButtonValue = function (stringOrObject) {
+        var t = $.type(stringOrObject);
+        if (t === "string") {
+            return stringOrObject;
+        }
+        else if (t === "object") {
+            if ($.type(stringOrObject.text) === "undefined") {
+                system.error('The object for a MessageBox button does not have a value property defined.');
+                return null;
+            } else {
+                return stringOrObject.value;
+            }
+        }
+        system.error('Object for a MessageBox button is not a string or object but ' + t + '.');
+        return null;
+    };
+
+    /**
+     * The markup for the message box's view.
+     * @property {string} defaultViewMarkup
+     * @static
+     */
+    MessageBox.defaultViewMarkup = [
+        '<div data-view="plugins/messageBox" data-bind="css: getClass(), style: getStyle()">',
+            '<div class="modal-header">',
+                '<h3 data-bind="html: title"></h3>',
+            '</div>',
+            '<div class="modal-body">',
+                '<p class="message" data-bind="html: message"></p>',
+            '</div>',
+            '<div class="modal-footer">',
+                '<!-- ko foreach: options -->',
+                '<button data-bind="click: function () { $parent.selectOption($parent.getButtonValue($data)); }, text: $parent.getButtonText($data), css: $parent.getButtonClass($index)"></button>',
+                '<!-- /ko -->',
+                '<div style="clear:both;"></div>',
+            '</div>',
+        '</div>'
+    ].join('\n');
+
+    function ensureDialogInstance(objOrModuleId) {
+        return system.defer(function (dfd) {
+            if (system.isString(objOrModuleId)) {
+                system.acquire(objOrModuleId).then(function (module) {
+                    dfd.resolve(system.resolveObject(module));
+                }).fail(function (err) {
+                    system.error('Failed to load dialog module (' + objOrModuleId + '). Details: ' + err.message);
+                });
+            } else {
+                dfd.resolve(objOrModuleId);
+            }
+        }).promise();
+    }
+
+    /**
+     * @class DialogModule
+     * @static
+     */
+    dialog = {
+        /**
+         * The constructor function used to create message boxes.
+         * @property {MessageBox} MessageBox
+         */
+        MessageBox: MessageBox,
+        /**
+         * The css zIndex that the last dialog was displayed at.
+         * @property {number} currentZIndex
+         */
+        currentZIndex: 1050,
+        /**
+         * Gets the next css zIndex at which a dialog should be displayed.
+         * @method getNextZIndex
+         * @return {number} The next usable zIndex.
+         */
+        getNextZIndex: function () {
+            return ++this.currentZIndex;
+        },
+        /**
+         * Determines whether or not there are any dialogs open.
+         * @method isOpen
+         * @return {boolean} True if a dialog is open. false otherwise.
+         */
+        isOpen: ko.computed(function() {
+            return dialogCount() > 0;
+        }),
+        /**
+         * Gets the dialog context by name or returns the default context if no name is specified.
+         * @method getContext
+         * @param {string} [name] The name of the context to retrieve.
+         * @return {DialogContext} True context.
+         */
+        getContext: function (name) {
+            return contexts[name || 'default'];
+        },
+        /**
+         * Adds (or replaces) a dialog context.
+         * @method addContext
+         * @param {string} name The name of the context to add.
+         * @param {DialogContext} dialogContext The context to add.
+         */
+        addContext: function (name, dialogContext) {
+            dialogContext.name = name;
+            contexts[name] = dialogContext;
+
+            var helperName = 'show' + name.substr(0, 1).toUpperCase() + name.substr(1);
+            this[helperName] = function (obj, activationData) {
+                return this.show(obj, activationData, name);
+            };
+        },
+        createCompositionSettings: function (obj, dialogContext) {
+            var settings = {
+                model: obj,
+                activate: false,
+                transition: false
+            };
+
+            if (dialogContext.binding) {
+                settings.binding = dialogContext.binding;
+            }
+
+            if (dialogContext.attached) {
+                settings.attached = dialogContext.attached;
+            }
+
+            if (dialogContext.compositionComplete) {
+                settings.compositionComplete = dialogContext.compositionComplete;
+            }
+
+            return settings;
+        },
+        /**
+         * Gets the dialog model that is associated with the specified object.
+         * @method getDialog
+         * @param {object} obj The object for whom to retrieve the dialog.
+         * @return {Dialog} The dialog model.
+         */
+        getDialog: function (obj) {
+            if (obj) {
+                return obj.__dialog__;
+            }
+
+            return undefined;
+        },
+        /**
+         * Closes the dialog associated with the specified object.
+         * @method close
+         * @param {object} obj The object whose dialog should be closed.
+         * @param {object} results* The results to return back to the dialog caller after closing.
+         */
+        close: function (obj) {
+            var theDialog = this.getDialog(obj);
+            if (theDialog) {
+                var rest = Array.prototype.slice.call(arguments, 1);
+                theDialog.close.apply(theDialog, rest);
+            }
+        },
+        /**
+         * Shows a dialog.
+         * @method show
+         * @param {object|string} obj The object (or moduleId) to display as a dialog.
+         * @param {object} [activationData] The data that should be passed to the object upon activation.
+         * @param {string} [context] The name of the dialog context to use. Uses the default context if none is specified.
+         * @return {Promise} A promise that resolves when the dialog is closed and returns any data passed at the time of closing.
+         */
+        show: function (obj, activationData, context) {
+            var that = this;
+            var dialogContext = contexts[context || 'default'];
+
+            return system.defer(function (dfd) {
+                ensureDialogInstance(obj).then(function (instance) {
+                    var dialogActivator = activator.create();
+
+                    dialogActivator.activateItem(instance, activationData).then(function (success) {
+                        if (success) {
+                            var theDialog = instance.__dialog__ = {
+                                owner: instance,
+                                context: dialogContext,
+                                activator: dialogActivator,
+                                close: function () {
+                                    var args = arguments;
+                                    dialogActivator.deactivateItem(instance, true).then(function (closeSuccess) {
+                                        if (closeSuccess) {
+                                            dialogCount(dialogCount() - 1);
+                                            dialogContext.removeHost(theDialog);
+                                            delete instance.__dialog__;
+
+                                            if (args.length === 0) {
+                                                dfd.resolve();
+                                            } else if (args.length === 1) {
+                                                dfd.resolve(args[0]);
+                                            } else {
+                                                dfd.resolve.apply(dfd, args);
+                                            }
+                                        }
+                                    });
+                                }
+                            };
+
+                            theDialog.settings = that.createCompositionSettings(instance, dialogContext);
+                            dialogContext.addHost(theDialog);
+
+                            dialogCount(dialogCount() + 1);
+                            composition.compose(theDialog.host, theDialog.settings);
+                        } else {
+                            dfd.resolve(false);
+                        }
+                    });
+                });
+            }).promise();
+        },
+        /**
+         * Shows a message box.
+         * @method showMessage
+         * @param {string} message The message to display in the dialog.
+         * @param {string} [title] The title message.
+         * @param {string[]} [options] The options to provide to the user.
+         * @param {boolean} [autoclose] Automatically close the the message box when clicking outside?
+         * @param {Object} [settings] Custom settings for this instance of the messsage box, used to change classes and styles.
+         * @return {Promise} A promise that resolves when the message box is closed and returns the selected option.
+         */
+        showMessage: function (message, title, options, autoclose, settings) {
+            if (system.isString(this.MessageBox)) {
+                return dialog.show(this.MessageBox, [
+                    message,
+                    title || MessageBox.defaultTitle,
+                    options || MessageBox.defaultOptions,
+                    autoclose || false,
+                    settings || {}
+                ]);
+            }
+
+            return dialog.show(new this.MessageBox(message, title, options, autoclose, settings));
+        },
+        /**
+         * Installs this module into Durandal; called by the framework. Adds `app.showDialog` and `app.showMessage` convenience methods.
+         * @method install
+         * @param {object} [config] Add a `messageBox` property to supply a custom message box constructor. Add a `messageBoxView` property to supply custom view markup for the built-in message box. You can also use messageBoxViewUrl to specify the view url.
+         */
+        install: function (config) {
+            app.showDialog = function (obj, activationData, context) {
+                return dialog.show(obj, activationData, context);
+            };
+
+            app.closeDialog = function () {
+                return dialog.close.apply(dialog, arguments);
+            };
+
+            app.showMessage = function (message, title, options, autoclose, settings) {
+                return dialog.showMessage(message, title, options, autoclose, settings);
+            };
+
+            if (config.messageBox) {
+                dialog.MessageBox = config.messageBox;
+            }
+
+            if (config.messageBoxView) {
+                dialog.MessageBox.prototype.getView = function () {
+                    return viewEngine.processMarkup(config.messageBoxView);
+                };
+            }
+
+            if (config.messageBoxViewUrl) {
+                dialog.MessageBox.setViewUrl(config.messageBoxViewUrl);
+            }
+        }
+    };
+
+    /**
+     * @class DialogContext
+     */
+    dialog.addContext('default', {
+        blockoutOpacity: 0.2,
+        removeDelay: 200,
+        /**
+         * In this function, you are expected to add a DOM element to the tree which will serve as the "host" for the modal's composed view. You must add a property called host to the modalWindow object which references the dom element. It is this host which is passed to the composition module.
+         * @method addHost
+         * @param {Dialog} theDialog The dialog model.
+         */
+        addHost: function (theDialog) {
+            var body = $('body');
+            var blockout = $('<div class="modalBlockout"></div>')
+                .css({ 'z-index': dialog.getNextZIndex(), 'opacity': this.blockoutOpacity })
+                .appendTo(body);
+
+            var host = $('<div class="modalHost"></div>')
+                .css({ 'z-index': dialog.getNextZIndex() })
+                .appendTo(body);
+
+            theDialog.host = host.get(0);
+            theDialog.blockout = blockout.get(0);
+
+            if (!dialog.isOpen()) {
+                theDialog.oldBodyMarginRight = body.css("margin-right");
+                theDialog.oldInlineMarginRight = body.get(0).style.marginRight;
+
+                var html = $("html");
+                var oldBodyOuterWidth = body.outerWidth(true);
+                var oldScrollTop = html.scrollTop();
+                $("html").css("overflow-y", "hidden");
+                var newBodyOuterWidth = $("body").outerWidth(true);
+                body.css("margin-right", (newBodyOuterWidth - oldBodyOuterWidth + parseInt(theDialog.oldBodyMarginRight, 10)) + "px");
+                html.scrollTop(oldScrollTop); // necessary for Firefox
+            }
+        },
+        /**
+         * This function is expected to remove any DOM machinery associated with the specified dialog and do any other necessary cleanup.
+         * @method removeHost
+         * @param {Dialog} theDialog The dialog model.
+         */
+        removeHost: function (theDialog) {
+            $(theDialog.host).css('opacity', 0);
+            $(theDialog.blockout).css('opacity', 0);
+
+            setTimeout(function () {
+                ko.removeNode(theDialog.host);
+                ko.removeNode(theDialog.blockout);
+            }, this.removeDelay);
+
+            if (!dialog.isOpen()) {
+                var html = $("html");
+                var oldScrollTop = html.scrollTop(); // necessary for Firefox.
+                html.css("overflow-y", "").scrollTop(oldScrollTop);
+
+                if (theDialog.oldInlineMarginRight) {
+                    $("body").css("margin-right", theDialog.oldBodyMarginRight);
+                } else {
+                    $("body").css("margin-right", '');
+                }
+            }
+        },
+        attached: function (view) {
+            //To prevent flickering in IE8, we set visibility to hidden first, and later restore it
+            $(view).css("visibility", "hidden");
+        },
+        /**
+         * This function is called after the modal is fully composed into the DOM, allowing your implementation to do any final modifications, such as positioning or animation. You can obtain the original dialog object by using `getDialog` on context.model.
+         * @method compositionComplete
+         * @param {DOMElement} child The dialog view.
+         * @param {DOMElement} parent The parent view.
+         * @param {object} context The composition context.
+         */
+        compositionComplete: function (child, parent, context) {
+            var theDialog = dialog.getDialog(context.model);
+            var $child = $(child);
+            var loadables = $child.find("img").filter(function () {
+                //Remove images with known width and height
+                var $this = $(this);
+                return !(this.style.width && this.style.height) && !($this.attr("width") && $this.attr("height"));
+            });
+
+            $child.data("predefinedWidth", $child.get(0).style.width);
+
+            var setDialogPosition = function (childView, objDialog) {
+                //Setting a short timeout is need in IE8, otherwise we could do this straight away
+                setTimeout(function () {
+                    var $childView = $(childView);
+
+                    objDialog.context.reposition(childView);
+
+                    $(objDialog.host).css('opacity', 1);
+                    $childView.css("visibility", "visible");
+
+                    $childView.find('.autofocus').first().focus();
+                }, 1);
+            };
+
+            setDialogPosition(child, theDialog);
+            loadables.load(function () {
+                setDialogPosition(child, theDialog);
+            });
+
+            if ($child.hasClass('autoclose') || context.model.autoclose) {
+                $(theDialog.blockout).click(function () {
+                    theDialog.close();
+                });
+            }
+        },
+        /**
+         * This function is called to reposition the model view.
+         * @method reposition
+         * @param {DOMElement} view The dialog view.
+         */
+        reposition: function (view) {
+            var $view = $(view),
+                $window = $(window);
+
+            //We will clear and then set width for dialogs without width set 
+            if (!$view.data("predefinedWidth")) {
+                $view.css({ width: '' }); //Reset width
+            }
+            var width = $view.outerWidth(false),
+                height = $view.outerHeight(false),
+                windowHeight = $window.height() - 10, //leave at least 10 pixels free
+                windowWidth = $window.width() - 10, //leave at least 10 pixels free
+                constrainedHeight = Math.min(height, windowHeight),
+                constrainedWidth = Math.min(width, windowWidth);
+
+            $view.css({
+                'margin-top': (-constrainedHeight / 2).toString() + 'px',
+                'margin-left': (-constrainedWidth / 2).toString() + 'px'
+            });
+
+            if (height > windowHeight) {
+                $view.css("overflow-y", "auto").outerHeight(windowHeight);
+            } else {
+                $view.css({
+                    "overflow-y": "",
+                    "height": ""
+                });
+            }
+
+            if (width > windowWidth) {
+                $view.css("overflow-x", "auto").outerWidth(windowWidth);
+            } else {
+                $view.css("overflow-x", "");
+
+                if (!$view.data("predefinedWidth")) {
+                    //Ensure the correct width after margin-left has been set
+                    $view.outerWidth(constrainedWidth);
+                } else {
+                    $view.css("width", $view.data("predefinedWidth"));
+                }
+            }
+        }
+    });
+
+    return dialog;
+});
+
 //! moment.js
 //! version : 2.8.4
 //! authors : Tim Wood, Iskren Chernev, Moment.js contributors
@@ -4329,13 +4900,16 @@ require.config({
     }
 });
 
-define('main',['durandal/system', 'durandal/app', 'durandal/viewLocator', 'bindingHandlers'], function (system, app, viewLocator, bindingHandlers) {
+define('main',['durandal/system', 'durandal/app', 'plugins/dialog', 'durandal/viewLocator', 'bindingHandlers'], function (system, app, dialog, viewLocator, bindingHandlers) {
     
     app.title = 'Student Organizer';
     app.configurePlugins({
         router: true,
         dialog: true
     });
+
+    dialog.MessageBox.setDefaults({ buttonClass: 'btn', primaryButtonClass: "success", secondaryButtonClass: "danger" });
+
     app.start().then(function () {
         viewLocator.useConvention();
         app.setRoot('viewmodels/shell');
@@ -4910,577 +5484,6 @@ define('viewmodels/404',[],function () {
     return {
     };
 });
-/**
- * Durandal 2.1.0 Copyright (c) 2012 Blue Spire Consulting, Inc. All Rights Reserved.
- * Available via the MIT license.
- * see: http://durandaljs.com or https://github.com/BlueSpire/Durandal for details.
- */
-/**
- * The dialog module enables the display of message boxes, custom modal dialogs and other overlays or slide-out UI abstractions. Dialogs are constructed by the composition system which interacts with a user defined dialog context. The dialog module enforced the activator lifecycle.
- * @module dialog
- * @requires system
- * @requires app
- * @requires composition
- * @requires activator
- * @requires viewEngine
- * @requires jquery
- * @requires knockout
- */
-define('plugins/dialog',['durandal/system', 'durandal/app', 'durandal/composition', 'durandal/activator', 'durandal/viewEngine', 'jquery', 'knockout'], function (system, app, composition, activator, viewEngine, $, ko) {
-    var contexts = {},
-        dialogCount = ko.observable(0),
-        dialog;
-
-    /**
-     * Models a message box's message, title and options.
-     * @class MessageBox
-     */
-    var MessageBox = function (message, title, options, autoclose, settings) {
-        this.message = message;
-        this.title = title || MessageBox.defaultTitle;
-        this.options = options || MessageBox.defaultOptions;
-        this.autoclose = autoclose || false;
-        this.settings = $.extend({}, MessageBox.defaultSettings, settings);
-    };
-
-    /**
-     * Selects an option and closes the message box, returning the selected option through the dialog system's promise.
-     * @method selectOption
-     * @param {string} dialogResult The result to select.
-     */
-    MessageBox.prototype.selectOption = function (dialogResult) {
-        dialog.close(this, dialogResult);
-    };
-
-    /**
-     * Provides the view to the composition system.
-     * @method getView
-     * @return {DOMElement} The view of the message box.
-     */
-    MessageBox.prototype.getView = function () {
-        return viewEngine.processMarkup(MessageBox.defaultViewMarkup);
-    };
-
-    /**
-     * Configures a custom view to use when displaying message boxes.
-     * @method setViewUrl
-     * @param {string} viewUrl The view url relative to the base url which the view locator will use to find the message box's view.
-     * @static
-     */
-    MessageBox.setViewUrl = function (viewUrl) {
-        delete MessageBox.prototype.getView;
-        MessageBox.prototype.viewUrl = viewUrl;
-    };
-
-    /**
-     * The title to be used for the message box if one is not provided.
-     * @property {string} defaultTitle
-     * @default Application
-     * @static
-     */
-    MessageBox.defaultTitle = app.title || 'Application';
-
-    /**
-     * The options to display in the message box if none are specified.
-     * @property {string[]} defaultOptions
-     * @default ['Ok']
-     * @static
-     */
-    MessageBox.defaultOptions = ['Ok'];
-
-    
-    MessageBox.defaultSettings = { buttonClass: "btn btn-default", primaryButtonClass: "btn-primary autofocus", secondaryButtonClass: "", "class": "modal-content messageBox", style: null };
-
-    /**
-    * Sets the classes and styles used throughout the message box markup.
-    * @method setDefaults
-    * @param {object} settings A settings object containing the following optional properties: buttonClass, primaryButtonClass, secondaryButtonClass, class, style.
-    */
-    MessageBox.setDefaults = function (settings) {
-        $.extend(MessageBox.defaultSettings, settings);
-    };
-
-    MessageBox.prototype.getButtonClass = function ($index) {
-        var c = "";
-        if (this.settings) {
-            if (this.settings.buttonClass) {
-                c = this.settings.buttonClass;
-            }
-            if ($index() === 0 && this.settings.primaryButtonClass) {
-                if (c.length > 0) {
-                    c += " ";
-                }
-                c += this.settings.primaryButtonClass;
-            }
-            if ($index() > 0 && this.settings.secondaryButtonClass) {
-                if (c.length > 0) {
-                    c += " ";
-                }
-                c += this.settings.secondaryButtonClass;
-            }
-        }
-        return c;
-    };
-
-    MessageBox.prototype.getClass = function () {
-        if (this.settings) {
-            return this.settings["class"];
-        }
-        return "messageBox";
-    };
-
-    MessageBox.prototype.getStyle = function () {
-        if (this.settings) {
-            return this.settings.style;
-        }
-        return null;
-    };
-
-    MessageBox.prototype.getButtonText = function (stringOrObject) {
-        var t = $.type(stringOrObject);
-        if (t === "string") {
-            return stringOrObject;
-        }
-        else if (t === "object") {
-            if ($.type(stringOrObject.text) === "string") {
-                return stringOrObject.text;
-            } else {
-                system.error('The object for a MessageBox button does not have a text property that is a string.');
-                return null;
-            }
-        }
-        system.error('Object for a MessageBox button is not a string or object but ' + t + '.');
-        return null;
-    };
-
-    MessageBox.prototype.getButtonValue = function (stringOrObject) {
-        var t = $.type(stringOrObject);
-        if (t === "string") {
-            return stringOrObject;
-        }
-        else if (t === "object") {
-            if ($.type(stringOrObject.text) === "undefined") {
-                system.error('The object for a MessageBox button does not have a value property defined.');
-                return null;
-            } else {
-                return stringOrObject.value;
-            }
-        }
-        system.error('Object for a MessageBox button is not a string or object but ' + t + '.');
-        return null;
-    };
-
-    /**
-     * The markup for the message box's view.
-     * @property {string} defaultViewMarkup
-     * @static
-     */
-    MessageBox.defaultViewMarkup = [
-        '<div data-view="plugins/messageBox" data-bind="css: getClass(), style: getStyle()">',
-            '<div class="modal-header">',
-                '<h3 data-bind="html: title"></h3>',
-            '</div>',
-            '<div class="modal-body">',
-                '<p class="message" data-bind="html: message"></p>',
-            '</div>',
-            '<div class="modal-footer">',
-                '<!-- ko foreach: options -->',
-                '<button data-bind="click: function () { $parent.selectOption($parent.getButtonValue($data)); }, text: $parent.getButtonText($data), css: $parent.getButtonClass($index)"></button>',
-                '<!-- /ko -->',
-                '<div style="clear:both;"></div>',
-            '</div>',
-        '</div>'
-    ].join('\n');
-
-    function ensureDialogInstance(objOrModuleId) {
-        return system.defer(function (dfd) {
-            if (system.isString(objOrModuleId)) {
-                system.acquire(objOrModuleId).then(function (module) {
-                    dfd.resolve(system.resolveObject(module));
-                }).fail(function (err) {
-                    system.error('Failed to load dialog module (' + objOrModuleId + '). Details: ' + err.message);
-                });
-            } else {
-                dfd.resolve(objOrModuleId);
-            }
-        }).promise();
-    }
-
-    /**
-     * @class DialogModule
-     * @static
-     */
-    dialog = {
-        /**
-         * The constructor function used to create message boxes.
-         * @property {MessageBox} MessageBox
-         */
-        MessageBox: MessageBox,
-        /**
-         * The css zIndex that the last dialog was displayed at.
-         * @property {number} currentZIndex
-         */
-        currentZIndex: 1050,
-        /**
-         * Gets the next css zIndex at which a dialog should be displayed.
-         * @method getNextZIndex
-         * @return {number} The next usable zIndex.
-         */
-        getNextZIndex: function () {
-            return ++this.currentZIndex;
-        },
-        /**
-         * Determines whether or not there are any dialogs open.
-         * @method isOpen
-         * @return {boolean} True if a dialog is open. false otherwise.
-         */
-        isOpen: ko.computed(function() {
-            return dialogCount() > 0;
-        }),
-        /**
-         * Gets the dialog context by name or returns the default context if no name is specified.
-         * @method getContext
-         * @param {string} [name] The name of the context to retrieve.
-         * @return {DialogContext} True context.
-         */
-        getContext: function (name) {
-            return contexts[name || 'default'];
-        },
-        /**
-         * Adds (or replaces) a dialog context.
-         * @method addContext
-         * @param {string} name The name of the context to add.
-         * @param {DialogContext} dialogContext The context to add.
-         */
-        addContext: function (name, dialogContext) {
-            dialogContext.name = name;
-            contexts[name] = dialogContext;
-
-            var helperName = 'show' + name.substr(0, 1).toUpperCase() + name.substr(1);
-            this[helperName] = function (obj, activationData) {
-                return this.show(obj, activationData, name);
-            };
-        },
-        createCompositionSettings: function (obj, dialogContext) {
-            var settings = {
-                model: obj,
-                activate: false,
-                transition: false
-            };
-
-            if (dialogContext.binding) {
-                settings.binding = dialogContext.binding;
-            }
-
-            if (dialogContext.attached) {
-                settings.attached = dialogContext.attached;
-            }
-
-            if (dialogContext.compositionComplete) {
-                settings.compositionComplete = dialogContext.compositionComplete;
-            }
-
-            return settings;
-        },
-        /**
-         * Gets the dialog model that is associated with the specified object.
-         * @method getDialog
-         * @param {object} obj The object for whom to retrieve the dialog.
-         * @return {Dialog} The dialog model.
-         */
-        getDialog: function (obj) {
-            if (obj) {
-                return obj.__dialog__;
-            }
-
-            return undefined;
-        },
-        /**
-         * Closes the dialog associated with the specified object.
-         * @method close
-         * @param {object} obj The object whose dialog should be closed.
-         * @param {object} results* The results to return back to the dialog caller after closing.
-         */
-        close: function (obj) {
-            var theDialog = this.getDialog(obj);
-            if (theDialog) {
-                var rest = Array.prototype.slice.call(arguments, 1);
-                theDialog.close.apply(theDialog, rest);
-            }
-        },
-        /**
-         * Shows a dialog.
-         * @method show
-         * @param {object|string} obj The object (or moduleId) to display as a dialog.
-         * @param {object} [activationData] The data that should be passed to the object upon activation.
-         * @param {string} [context] The name of the dialog context to use. Uses the default context if none is specified.
-         * @return {Promise} A promise that resolves when the dialog is closed and returns any data passed at the time of closing.
-         */
-        show: function (obj, activationData, context) {
-            var that = this;
-            var dialogContext = contexts[context || 'default'];
-
-            return system.defer(function (dfd) {
-                ensureDialogInstance(obj).then(function (instance) {
-                    var dialogActivator = activator.create();
-
-                    dialogActivator.activateItem(instance, activationData).then(function (success) {
-                        if (success) {
-                            var theDialog = instance.__dialog__ = {
-                                owner: instance,
-                                context: dialogContext,
-                                activator: dialogActivator,
-                                close: function () {
-                                    var args = arguments;
-                                    dialogActivator.deactivateItem(instance, true).then(function (closeSuccess) {
-                                        if (closeSuccess) {
-                                            dialogCount(dialogCount() - 1);
-                                            dialogContext.removeHost(theDialog);
-                                            delete instance.__dialog__;
-
-                                            if (args.length === 0) {
-                                                dfd.resolve();
-                                            } else if (args.length === 1) {
-                                                dfd.resolve(args[0]);
-                                            } else {
-                                                dfd.resolve.apply(dfd, args);
-                                            }
-                                        }
-                                    });
-                                }
-                            };
-
-                            theDialog.settings = that.createCompositionSettings(instance, dialogContext);
-                            dialogContext.addHost(theDialog);
-
-                            dialogCount(dialogCount() + 1);
-                            composition.compose(theDialog.host, theDialog.settings);
-                        } else {
-                            dfd.resolve(false);
-                        }
-                    });
-                });
-            }).promise();
-        },
-        /**
-         * Shows a message box.
-         * @method showMessage
-         * @param {string} message The message to display in the dialog.
-         * @param {string} [title] The title message.
-         * @param {string[]} [options] The options to provide to the user.
-         * @param {boolean} [autoclose] Automatically close the the message box when clicking outside?
-         * @param {Object} [settings] Custom settings for this instance of the messsage box, used to change classes and styles.
-         * @return {Promise} A promise that resolves when the message box is closed and returns the selected option.
-         */
-        showMessage: function (message, title, options, autoclose, settings) {
-            if (system.isString(this.MessageBox)) {
-                return dialog.show(this.MessageBox, [
-                    message,
-                    title || MessageBox.defaultTitle,
-                    options || MessageBox.defaultOptions,
-                    autoclose || false,
-                    settings || {}
-                ]);
-            }
-
-            return dialog.show(new this.MessageBox(message, title, options, autoclose, settings));
-        },
-        /**
-         * Installs this module into Durandal; called by the framework. Adds `app.showDialog` and `app.showMessage` convenience methods.
-         * @method install
-         * @param {object} [config] Add a `messageBox` property to supply a custom message box constructor. Add a `messageBoxView` property to supply custom view markup for the built-in message box. You can also use messageBoxViewUrl to specify the view url.
-         */
-        install: function (config) {
-            app.showDialog = function (obj, activationData, context) {
-                return dialog.show(obj, activationData, context);
-            };
-
-            app.closeDialog = function () {
-                return dialog.close.apply(dialog, arguments);
-            };
-
-            app.showMessage = function (message, title, options, autoclose, settings) {
-                return dialog.showMessage(message, title, options, autoclose, settings);
-            };
-
-            if (config.messageBox) {
-                dialog.MessageBox = config.messageBox;
-            }
-
-            if (config.messageBoxView) {
-                dialog.MessageBox.prototype.getView = function () {
-                    return viewEngine.processMarkup(config.messageBoxView);
-                };
-            }
-
-            if (config.messageBoxViewUrl) {
-                dialog.MessageBox.setViewUrl(config.messageBoxViewUrl);
-            }
-        }
-    };
-
-    /**
-     * @class DialogContext
-     */
-    dialog.addContext('default', {
-        blockoutOpacity: 0.2,
-        removeDelay: 200,
-        /**
-         * In this function, you are expected to add a DOM element to the tree which will serve as the "host" for the modal's composed view. You must add a property called host to the modalWindow object which references the dom element. It is this host which is passed to the composition module.
-         * @method addHost
-         * @param {Dialog} theDialog The dialog model.
-         */
-        addHost: function (theDialog) {
-            var body = $('body');
-            var blockout = $('<div class="modalBlockout"></div>')
-                .css({ 'z-index': dialog.getNextZIndex(), 'opacity': this.blockoutOpacity })
-                .appendTo(body);
-
-            var host = $('<div class="modalHost"></div>')
-                .css({ 'z-index': dialog.getNextZIndex() })
-                .appendTo(body);
-
-            theDialog.host = host.get(0);
-            theDialog.blockout = blockout.get(0);
-
-            if (!dialog.isOpen()) {
-                theDialog.oldBodyMarginRight = body.css("margin-right");
-                theDialog.oldInlineMarginRight = body.get(0).style.marginRight;
-
-                var html = $("html");
-                var oldBodyOuterWidth = body.outerWidth(true);
-                var oldScrollTop = html.scrollTop();
-                $("html").css("overflow-y", "hidden");
-                var newBodyOuterWidth = $("body").outerWidth(true);
-                body.css("margin-right", (newBodyOuterWidth - oldBodyOuterWidth + parseInt(theDialog.oldBodyMarginRight, 10)) + "px");
-                html.scrollTop(oldScrollTop); // necessary for Firefox
-            }
-        },
-        /**
-         * This function is expected to remove any DOM machinery associated with the specified dialog and do any other necessary cleanup.
-         * @method removeHost
-         * @param {Dialog} theDialog The dialog model.
-         */
-        removeHost: function (theDialog) {
-            $(theDialog.host).css('opacity', 0);
-            $(theDialog.blockout).css('opacity', 0);
-
-            setTimeout(function () {
-                ko.removeNode(theDialog.host);
-                ko.removeNode(theDialog.blockout);
-            }, this.removeDelay);
-
-            if (!dialog.isOpen()) {
-                var html = $("html");
-                var oldScrollTop = html.scrollTop(); // necessary for Firefox.
-                html.css("overflow-y", "").scrollTop(oldScrollTop);
-
-                if (theDialog.oldInlineMarginRight) {
-                    $("body").css("margin-right", theDialog.oldBodyMarginRight);
-                } else {
-                    $("body").css("margin-right", '');
-                }
-            }
-        },
-        attached: function (view) {
-            //To prevent flickering in IE8, we set visibility to hidden first, and later restore it
-            $(view).css("visibility", "hidden");
-        },
-        /**
-         * This function is called after the modal is fully composed into the DOM, allowing your implementation to do any final modifications, such as positioning or animation. You can obtain the original dialog object by using `getDialog` on context.model.
-         * @method compositionComplete
-         * @param {DOMElement} child The dialog view.
-         * @param {DOMElement} parent The parent view.
-         * @param {object} context The composition context.
-         */
-        compositionComplete: function (child, parent, context) {
-            var theDialog = dialog.getDialog(context.model);
-            var $child = $(child);
-            var loadables = $child.find("img").filter(function () {
-                //Remove images with known width and height
-                var $this = $(this);
-                return !(this.style.width && this.style.height) && !($this.attr("width") && $this.attr("height"));
-            });
-
-            $child.data("predefinedWidth", $child.get(0).style.width);
-
-            var setDialogPosition = function (childView, objDialog) {
-                //Setting a short timeout is need in IE8, otherwise we could do this straight away
-                setTimeout(function () {
-                    var $childView = $(childView);
-
-                    objDialog.context.reposition(childView);
-
-                    $(objDialog.host).css('opacity', 1);
-                    $childView.css("visibility", "visible");
-
-                    $childView.find('.autofocus').first().focus();
-                }, 1);
-            };
-
-            setDialogPosition(child, theDialog);
-            loadables.load(function () {
-                setDialogPosition(child, theDialog);
-            });
-
-            if ($child.hasClass('autoclose') || context.model.autoclose) {
-                $(theDialog.blockout).click(function () {
-                    theDialog.close();
-                });
-            }
-        },
-        /**
-         * This function is called to reposition the model view.
-         * @method reposition
-         * @param {DOMElement} view The dialog view.
-         */
-        reposition: function (view) {
-            var $view = $(view),
-                $window = $(window);
-
-            //We will clear and then set width for dialogs without width set 
-            if (!$view.data("predefinedWidth")) {
-                $view.css({ width: '' }); //Reset width
-            }
-            var width = $view.outerWidth(false),
-                height = $view.outerHeight(false),
-                windowHeight = $window.height() - 10, //leave at least 10 pixels free
-                windowWidth = $window.width() - 10, //leave at least 10 pixels free
-                constrainedHeight = Math.min(height, windowHeight),
-                constrainedWidth = Math.min(width, windowWidth);
-
-            $view.css({
-                'margin-top': (-constrainedHeight / 2).toString() + 'px',
-                'margin-left': (-constrainedWidth / 2).toString() + 'px'
-            });
-
-            if (height > windowHeight) {
-                $view.css("overflow-y", "auto").outerHeight(windowHeight);
-            } else {
-                $view.css({
-                    "overflow-y": "",
-                    "height": ""
-                });
-            }
-
-            if (width > windowWidth) {
-                $view.css("overflow-x", "auto").outerWidth(windowWidth);
-            } else {
-                $view.css("overflow-x", "");
-
-                if (!$view.data("predefinedWidth")) {
-                    //Ensure the correct width after margin-left has been set
-                    $view.outerWidth(constrainedWidth);
-                } else {
-                    $view.css("width", $view.data("predefinedWidth"));
-                }
-            }
-        }
-    });
-
-    return dialog;
-});
-
 define('viewmodels/modals/editEvent',['plugins/dialog', 'knockout', 'moment'], function (dialog, ko, moment) {
     var EditEventModal = function (event) {
         this.name = ko.observable(event.name());
@@ -9652,25 +9655,25 @@ define('text!views/404.html',[],function () { return '<div class="modal-dialog">
 define('text!views/events.html',[],function () { return '<div class="events">\r\n    <h3 class="text-center">Events</h3>\r\n\r\n    <div class="splash" data-bind="visible: isBusy"><i class="fa fa-spinner fa-spin"></i></div>\r\n\r\n    <div data-bind="visible: !isBusy()">\r\n        <br />\r\n        <div class="panel-group" id="eventist">\r\n            <!--ko foreach: sortedEvents -->\r\n            <div class="panel panel-default">\r\n                <div class="panel-heading">\r\n                    <h4 class="panel-title">\r\n                        <a class="collapsed" data-toggle="collapse" data-parent="#eventist" data-bind="attr: { href: \'#collapse\' + objectId() }">\r\n                            <span data-bind="text: name"></span>\r\n                            <span data-bind="visible: important">(!!!)</span>\r\n                        </a>\r\n                        <a href="#" data-bind="ifnot: $root.subject, attr: { href: \'#subjects/\' + subject() }">\r\n                            <span class="label label-default" data-bind="text: subject"></span>\r\n                        </a>\r\n                        <span class="pull-right">\r\n                            <span data-bind="text: moment(date()).format(\'HH:mm\')"></span>\r\n                            <span data-bind="text: moment(date()).format(\' MMM DD, YYYY\'), visible: $root.subject"></span>\r\n                        </span>\r\n                    </h4>\r\n                </div>\r\n\r\n                <div class="panel-collapse collapse" data-bind="attr: { id: \'collapse\' + objectId() }">\r\n                    <table class="table table-bordered">\r\n                        <tr>\r\n                            <th colspan="3">Description</th>\r\n                            <th>Date</th>\r\n                        </tr>\r\n                        <tr>\r\n                            <td colspan="3" rowspan="4" data-bind="text: description"></td>\r\n                            <td data-bind="text: date().format(\'MM/DD/YYYY\')"></td>\r\n                        </tr>\r\n                        <tr>\r\n                            <th>Impotant</th>\r\n                        </tr>\r\n                        <tr>\r\n                            <td data-bind="text: important() ? \'yes\' : \'no\'"></td>\r\n                        </tr>\r\n                        <tr>\r\n                            <td class="text-center">\r\n                                <button class="btn edit" data-bind="click: $parent.editEvent, popover: \'Edit\'"><i class="fa fa-pencil"></i></button>\r\n                                <button class="btn delete" data-bind="click: $parent.deleteEvent, popover: \'Delete\'"><i class="fa fa-trash-o"></i></button>\r\n                            </td>\r\n                        </tr>\r\n                    </table>\r\n                </div>\r\n            </div>\r\n            <!--/ko-->\r\n            <div class="text-center" data-bind="visible: !sortedEvents().length">\r\n                <h4>There are no events.</h4>\r\n                <button class="btn edit" data-bind="click: editEvent">+ Add new event</button>\r\n            </div>\r\n            <div class="text-right" data-bind="visible: sortedEvents().length">\r\n                <br />\r\n                <button class="btn edit" data-bind="click: editEvent">+ Add new event</button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</div>\r\n';});
 
 
-define('text!views/modals/daySchedule.html',[],function () { return '<div class="modal-content">\r\n\r\n    <div class="modal-header">\r\n        <button type="button" class="close" data-bind="click: close"><span>&times;</span></button>\r\n        <h3>Day schedule</h3>\r\n        <h4 data-bind="text: date.format(\'MM/DD/YYYY\')"></h4>\r\n    </div>\r\n\r\n    <div class="modal-body day-schedule">\r\n        <div class="row text-center">\r\n            <div class="col-xs-2 col-xs-offset-1"><strong>Time</strong></div>\r\n            <div class="col-xs-4"><strong>Subject</strong></div>\r\n            <div class="col-xs-3"><strong>Lecture Room</strong></div>\r\n        </div>\r\n        <!--ko foreach: { data: lectureHours, as: \'currentLecture\' } -->\r\n        <div class="row lecture-time" data-bind="with: $root.lectures[currentLecture.time]">\r\n            <div class="col-xs-1 text-right">\r\n                <strong data-bind="text: $index() + 1 + \'.\'"></strong>\r\n            </div>\r\n            <div class="col-xs-2">\r\n                <div class="btn-group time-btn">\r\n                    <button class="btn btn-default" type="button" data-bind="text: currentLecture.time.substr(0, 2)" disabled></button>\r\n                    <button class="btn btn-default" type="button" data-bind="text: currentLecture.time.substr(3, 2)" disabled></button>\r\n                </div>\r\n            </div>\r\n            <div class="col-xs-4">\r\n                <input class="form-control" data-bind="value: subject" />\r\n            </div>\r\n            <div class="col-xs-3">\r\n                <input class="form-control" data-bind="value: lectureRoom" />\r\n            </div>\r\n            <div class="col-xs-2 text-left">\r\n                <button class="btn clear" data-bind="click: $root.clear, popover: \'Clear\'"><i class="fa fa-eraser"></i></button>\r\n            </div>\r\n        </div>\r\n        <!--/ko-->\r\n    </div>\r\n\r\n    <div class="modal-footer">\r\n        <div class="row text-right">\r\n            <div class="col-xs-11">\r\n                <button class="btn btn-default success" data-bind="click: save">Save</button>\r\n                <button class="btn btn-default danger" data-bind="click: close">Cancel</button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n</div>\r\n';});
+define('text!views/modals/daySchedule.html',[],function () { return '<div class="modal-light modal-content day-schedule">\r\n\r\n    <div class="modal-header">\r\n        <button type="button" class="close" data-bind="click: close"><span>&times;</span></button>\r\n        <h3>Day schedule</h3>\r\n        <h4 data-bind="text: date.format(\'MM/DD/YYYY\')"></h4>\r\n    </div>\r\n\r\n    <div class="modal-body">\r\n        <div class="row text-center">\r\n            <div class="col-xs-2 col-xs-offset-1"><span>Time</span></div>\r\n            <div class="col-xs-4"><span>Subject</span></div>\r\n            <div class="col-xs-3"><span>Lecture Room</span></div>\r\n        </div>\r\n        <!--ko foreach: { data: lectureHours, as: \'currentLecture\' } -->\r\n        <div class="row lecture-time" data-bind="with: $root.lectures[currentLecture.time]">\r\n            <div class="col-xs-1 text-right">\r\n                <span data-bind="text: $index() + 1 + \'.\'"></span>\r\n            </div>\r\n            <div class="col-xs-2">\r\n                <div class="btn-group time-btn">\r\n                    <button class="btn btn-default" type="button" data-bind="text: currentLecture.time.substr(0, 2)" disabled></button>\r\n                    <button class="btn btn-default" type="button" data-bind="text: currentLecture.time.substr(3, 2)" disabled></button>\r\n                </div>\r\n            </div>\r\n            <div class="col-xs-4">\r\n                <input class="form-control" data-bind="value: subject" />\r\n            </div>\r\n            <div class="col-xs-3">\r\n                <input class="form-control" data-bind="value: lectureRoom" />\r\n            </div>\r\n            <div class="col-xs-2 text-left">\r\n                <button class="btn clear" data-bind="click: $root.clear, popover: \'Clear\'"><i class="fa fa-eraser"></i></button>\r\n            </div>\r\n        </div>\r\n        <!--/ko-->\r\n    </div>\r\n\r\n    <div class="modal-footer">\r\n        <div class="row text-right">\r\n            <div class="col-xs-11">\r\n                <button class="btn success" data-bind="click: save">Save</button>\r\n                <button class="btn danger" data-bind="click: close">Cancel</button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n</div>\r\n';});
 
 
-define('text!views/modals/editEvent.html',[],function () { return '<div class="modal-content edit-event">\r\n    <div class="modal-header">\r\n        <button type="button" class="close" data-bind="click: cancel"><span>&times;</span></button>\r\n        <h3>Edit event</h3>\r\n    </div>\r\n    <div class="modal-body">\r\n        <div class="row">\r\n            <div class="col-md-8">\r\n                Title:<p><input class="form-control" data-bind="value: name" /></p>\r\n                Description:<p><textarea class="form-control" data-bind="value: description"></textarea></p>\r\n            </div>\r\n            <div class="col-md-4">\r\n                Date:<p><input class="form-control" data-bind="selectDate: date" /></p>\r\n                Time:<div data-bind="compose: { model: \'viewmodels/timepicker\', mode: \'templated\' }"></div>\r\n                Impotant:<p><input type="checkbox" data-bind="checked: important" /></p>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <div class="modal-footer text-right">\r\n        <button class="btn btn-default success" data-bind="click: save">Save</button>\r\n        <button class="btn btn-default danger" data-bind="click: cancel">Cancel</button>\r\n    </div>\r\n</div>\r\n';});
+define('text!views/modals/editEvent.html',[],function () { return '<div class="modal-light modal-content edit-event">\r\n    <div class="modal-header">\r\n        <button type="button" class="close" data-bind="click: cancel"><span>&times;</span></button>\r\n        <h3>Edit event</h3>\r\n    </div>\r\n    <div class="modal-body">\r\n        <div class="row">\r\n            <div class="col-md-8">\r\n                Title:<p><input class="form-control" data-bind="value: name" /></p>\r\n                Description:<p><textarea class="form-control" data-bind="value: description"></textarea></p>\r\n            </div>\r\n            <div class="col-md-4">\r\n                Date:<p><input class="form-control" data-bind="selectDate: date" /></p>\r\n                Time:<div data-bind="compose: { model: \'viewmodels/timepicker\', mode: \'templated\' }"></div>\r\n                Impotant:<p><input type="checkbox" data-bind="checked: important" /></p>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <div class="modal-footer text-right">\r\n        <button class="btn success" data-bind="click: save">Save</button>\r\n        <button class="btn danger" data-bind="click: cancel">Cancel</button>\r\n    </div>\r\n</div>\r\n';});
 
 
-define('text!views/modals/editTask.html',[],function () { return '<div class="modal-content edit-task">\r\n    <div class="modal-header">\r\n        <button type="button" class="close" data-bind="click: cancel"><span>&times;</span></button>\r\n        <h3>Edit task</h3>\r\n    </div>\r\n    <div class="modal-body">\r\n        <div class="row">\r\n            <div class="col-md-8">\r\n                Title:<p><input class="form-control" data-bind="value: title" /></p>\r\n                Description:<p><textarea class="form-control" data-bind="value: description"></textarea></p>\r\n            </div>\r\n            <div class="col-md-4">\r\n                Date:<p><input class="form-control" data-bind="selectDate: date" /></p>\r\n                Impotant:<p><input type="checkbox" data-bind="checked: important" /></p>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <div class="modal-footer text-right">\r\n        <button class="btn btn-default success" data-bind="click: save">Save</button>\r\n        <button class="btn btn-default danger" data-bind="click: cancel">Cancel</button>\r\n    </div>\r\n</div>\r\n';});
+define('text!views/modals/editTask.html',[],function () { return '<div class="modal-light modal-content edit-task">\r\n    <div class="modal-header">\r\n        <button type="button" class="close" data-bind="click: cancel"><span>&times;</span></button>\r\n        <h3>Edit task</h3>\r\n    </div>\r\n    <div class="modal-body">\r\n        <div class="row">\r\n            <div class="col-md-8">\r\n                Title:<p><input class="form-control" data-bind="value: title" /></p>\r\n                Description:<p><textarea class="form-control" data-bind="value: description"></textarea></p>\r\n            </div>\r\n            <div class="col-md-4">\r\n                Date:<p><input class="form-control" data-bind="selectDate: date" /></p>\r\n                Impotant:<p><input type="checkbox" data-bind="checked: important" /></p>\r\n            </div>\r\n        </div>\r\n    </div>\r\n    <div class="modal-footer text-right">\r\n        <button class="btn success" data-bind="click: save">Save</button>\r\n        <button class="btn danger" data-bind="click: cancel">Cancel</button>\r\n    </div>\r\n</div>\r\n';});
 
 
-define('text!views/modals/newNotes.html',[],function () { return '<div class="modal-content new-notes">\r\n    <div class="modal-header">\r\n        <button type="button" class="close" data-bind="click: cancel"><span>&times;</span></button>\r\n        <h3>New notes</h3>\r\n    </div>\r\n    <div class="modal-body">\r\n        <form data-bind="submit: ok">\r\n            <p class="message">Title:</p>\r\n            <input class="form-control autofocus" data-bind="value: title" required />\r\n            <div class="modal-footer">\r\n                <button class="btn btn-default success" type="submit">Create</button>\r\n                <button class="btn btn-default danger" data-bind="click: cancel">Cancel</button>\r\n            </div>\r\n        </form>\r\n    </div>\r\n</div>\r\n';});
+define('text!views/modals/newNotes.html',[],function () { return '<div class="modal-light modal-content new-notes">\r\n    <div class="modal-header">\r\n        <button type="button" class="close" data-bind="click: cancel"><span>&times;</span></button>\r\n        <h4>New notes</h4>\r\n    </div>\r\n    <div class="modal-body">\r\n        <form data-bind="submit: ok">\r\n            <p class="message">Title:</p>\r\n            <input class="form-control autofocus" data-bind="value: title" required />\r\n            <div class="modal-footer">\r\n                <button class="btn success" type="submit">Create</button>\r\n                <button class="btn danger" data-bind="click: cancel">Cancel</button>\r\n            </div>\r\n        </form>\r\n    </div>\r\n</div>\r\n';});
 
 
 define('text!views/organizer.html',[],function () { return '<div class="row">\r\n    <div class="col-md-4">\r\n        <div class="schedule-small">\r\n            <h3 class="text-center">Schedule</h3>\r\n\r\n            <div class="splash small" data-bind="visible: isBusy"><i class="fa fa-spinner fa-spin"></i></div>\r\n\r\n            <table class="table table-stripped" data-bind="visible: !isBusy()">\r\n                <tr>\r\n                    <th colspan="5"></th>\r\n                </tr>\r\n                <tr data-bind="ifnot: lectures().length">\r\n                    <td colspan="5"><h4 class="text-center">There are no lectures for this day.</h4></td>\r\n                </tr>\r\n                <!--ko foreach: lectures -->\r\n                <tr>\r\n                    <td data-bind="text: moment(date).format(\'HH:mm\')"></td>\r\n                    <td colspan="3" data-bind="text: subject"></td>\r\n                    <td class="text-right" data-bind="text: lectureRoom"></td>\r\n                </tr>\r\n                <!--/ko-->\r\n            </table>\r\n        </div>\r\n        <br />\r\n        <div data-bind="compose: \'templates/calendar.html\'"></div>\r\n    </div>\r\n    <div class="col-md-8">\r\n        <h3 class="text-right selected-date" data-bind="text: selectedDate().format(\'MMM DD, YYYY\')"></h3>\r\n        <div class="wrapper light-wrapper">\r\n            <div class="row">\r\n                <div class="col-md-12" data-bind="compose: { model: \'viewmodels/tasks\', activationData: { date: selectedDate } }"></div>\r\n            </div>\r\n            <br />\r\n            <div class="row">\r\n                <div class="col-md-12" data-bind="compose: { model: \'viewmodels/events\', activationData: { date: selectedDate } }"></div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</div>\r\n';});
 
 
-define('text!views/schedule.html',[],function () { return '<div class="wrapper light-wrapper schedule">\r\n    <h3 class="text-center">Schedule</h3>\r\n\r\n    <div class="splash" data-bind="visible: isBusy"><i class="fa fa-spinner fa-spin"></i></div>\r\n\r\n    <div data-bind="visible: !isBusy()">\r\n        <div class="text-center">\r\n            <i class="fa fa-caret-left btn btn-small" data-bind="click: function () { monday(monday().subtract(7, \'d\')); }"></i>\r\n            <span data-bind="text: week"></span>\r\n            <i class="fa fa-caret-right btn btn-small" data-bind="click: function () { monday(monday().add(7, \'d\')); }"></i>\r\n        </div>\r\n        <br />\r\n\r\n        <div class="row table-heading">\r\n            <div class="col-xs-1"></div>\r\n            <!--ko foreach: [\'Monday\', \'Tuesday\', \'Wednesday\', \'Thursday\', \'Friday\'] -->\r\n            <div class="col-xs-2">\r\n                <strong data-bind="text: $data"></strong>\r\n            </div>\r\n            <!--/ko-->\r\n        </div>\r\n\r\n        <div class="schedule-table">\r\n            <!--ko foreach: { data: lectureHours, as: \'currentLecture\' }-->\r\n            <div class="row schedule-row">\r\n                <div class="col-xs-1">\r\n                    <strong data-bind="text: time"></strong>\r\n                </div>\r\n                <!--ko foreach: $root.days -->\r\n                <div class="col-xs-2 editable" data-bind="click: $root.editDaySchedule">\r\n                    <div class="lecture" data-bind="with: lectures[currentLecture.time]">\r\n                        <div data-bind="text: subject"></div>\r\n                        <div class="lecture-room" data-bind="text: lectureRoom"></div>\r\n                    </div>\r\n                </div>\r\n                <!--/ko-->\r\n                <div class="col-xs-1">\r\n                    <i class="fa fa-times remove" data-bind="click: $root.deleteLectureTime, popover: \'Remove lecture time\'"></i>\r\n                </div>\r\n            </div>\r\n            <!--/ko-->\r\n\r\n            <!--ko ifnot: lectureHours().length-->\r\n            <!--ko foreach: [0,1,2,3] -->\r\n            <div class="row schedule-row">\r\n                <div class="col-xs-1">\r\n                    <strong data-bind="text: \'--:--\'"></strong>\r\n                </div>\r\n            </div>\r\n            <!--/ko-->\r\n            <div class="row schedule-row">\r\n                <div class="col-xs-10 col-xs-offset-1">\r\n                    <span>Schedule is empty. Create lecture time and add lectures to your schedule.</span>\r\n                </div>\r\n            </div>\r\n            <!--/ko-->\r\n        </div>\r\n\r\n        <div class="row add-time">\r\n            <div class="col-xs-1 text-right clock">\r\n                <i class="fa fa-clock-o"></i>\r\n            </div>\r\n            <div class="col-xs-2" data-bind="with: timeToAdd">\r\n                <div data-bind="compose: { model: \'viewmodels/timepicker\', mode: \'templated\' }"></div>\r\n            </div>\r\n            <div class="col-xs-8 text-left">\r\n                <div class="add-btn" data-bind="click: addLectureTime">Add lecture time</div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</div>\r\n';});
+define('text!views/schedule.html',[],function () { return '<div class="wrapper light-wrapper schedule">\r\n    <h3 class="text-center">Schedule</h3>\r\n\r\n    <div class="splash" data-bind="visible: isBusy"><i class="fa fa-spinner fa-spin"></i></div>\r\n\r\n    <div data-bind="visible: !isBusy()">\r\n        <div class="text-center">\r\n            <i class="fa fa-caret-left btn btn-small" data-bind="click: function () { monday(monday().subtract(7, \'d\')); }"></i>\r\n            <span data-bind="text: week"></span>\r\n            <i class="fa fa-caret-right btn btn-small" data-bind="click: function () { monday(monday().add(7, \'d\')); }"></i>\r\n        </div>\r\n        <br />\r\n\r\n        <div class="row table-heading">\r\n            <div class="col-xs-1"></div>\r\n            <!--ko foreach: [\'Monday\', \'Tuesday\', \'Wednesday\', \'Thursday\', \'Friday\'] -->\r\n            <div class="col-xs-2">\r\n                <strong data-bind="text: $data"></strong>\r\n            </div>\r\n            <!--/ko-->\r\n        </div>\r\n\r\n        <div class="schedule-table">\r\n            <!--ko foreach: { data: lectureHours, as: \'currentLecture\' }-->\r\n            <div class="row schedule-row">\r\n                <div class="col-xs-1">\r\n                    <strong data-bind="text: time"></strong>\r\n                </div>\r\n                <!--ko foreach: $root.days -->\r\n                <div class="col-xs-2 editable" data-bind="click: $root.editDaySchedule">\r\n                    <div class="lecture" data-bind="with: lectures[currentLecture.time]">\r\n                        <div data-bind="text: subject"></div>\r\n                        <div class="lecture-room" data-bind="text: lectureRoom"></div>\r\n                    </div>\r\n                </div>\r\n                <!--/ko-->\r\n                <div class="col-xs-1">\r\n                    <i class="fa fa-times remove" data-bind="click: $root.deleteLectureTime, popover: \'Remove lecture time\'"></i>\r\n                </div>\r\n            </div>\r\n            <!--/ko-->\r\n\r\n            <!--ko ifnot: lectureHours().length-->\r\n            <!--ko foreach: [0,1,2,3] -->\r\n            <div class="row schedule-row">\r\n                <div class="col-xs-1">\r\n                    <strong data-bind="text: \'--:--\'"></strong>\r\n                </div>\r\n            </div>\r\n            <!--/ko-->\r\n            <div class="row schedule-row">\r\n                <div class="col-xs-10 col-xs-offset-1">\r\n                    <br />\r\n                    <span>Schedule is empty. Create lecture time and add lectures to your schedule.</span>\r\n                </div>\r\n            </div>\r\n            <!--/ko-->\r\n        </div>\r\n\r\n        <div class="row add-time">\r\n            <div class="col-xs-1 text-right clock">\r\n                <i class="fa fa-clock-o"></i>\r\n            </div>\r\n            <div class="col-xs-2" data-bind="with: timeToAdd">\r\n                <div data-bind="compose: { model: \'viewmodels/timepicker\', mode: \'templated\' }"></div>\r\n            </div>\r\n            <div class="col-xs-8 text-left">\r\n                <div class="add-btn" data-bind="click: addLectureTime">Add lecture time</div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</div>\r\n';});
 
 
-define('text!views/shell.html',[],function () { return '<div class="container">\r\n\r\n    <nav class="navbar navbar-inverse" role="navigation" data-bind="visible: userName">\r\n        <div class="container-fluid">\r\n            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">\r\n                <span class="sr-only">Toggle Navigation</span>\r\n                <span class="icon-bar"></span>\r\n                <span class="icon-bar"></span>\r\n                <span class="icon-bar"></span>\r\n            </button>\r\n\r\n        <div class="collapse navbar-collapse" id="main-navbar">\r\n            <ul class="nav navbar-nav">\r\n                <!--ko foreach: router.navigationModel -->\r\n                <li data-bind="css: { active: isActive }">\r\n                    <a data-bind="attr: { href: hash }">\r\n                        <i data-bind="attr: { class: \'fa fa-\' + icon }"></i>\r\n                        <span data-bind="text: title"></span>\r\n                    </a>\r\n                </li>\r\n                <!--/ko-->\r\n\r\n                <li class="dropdown">\r\n                    <a href="#" class="dropdown-toggle" data-bind="click: refreshSubjects" data-toggle="dropdown" role="button" aria-expanded="false">\r\n                        <i class="fa fa-book"></i> Subjects <span class="caret"></span>\r\n                    </a>\r\n                    <ul class="dropdown-menu subj-dropdown" role="menu">\r\n                        <li data-bind="visible: isBusy"><div class="splash small"><i class="fa fa-spinner fa-spin"></i></div></li>\r\n\r\n                        <!--ko foreach: subjects-->\r\n                        <li>\r\n                            <a href="#" data-bind="attr: { href: \'#subjects/\' + name }">\r\n                                <span data-bind="text: name"></span>\r\n                            </a>\r\n                            <i class="fa fa-times" data-bind="click: $root.removeSubject, popover: \'Remove subject\'"></i>\r\n                        </li>\r\n                        <!--/ko-->\r\n                        <li class="add-subj">\r\n                            <form data-bind="submit: addNewSubject">\r\n                                <div class="input-group input-group-sm">\r\n                                    <input class="form-control" type="text" data-bind="value: newSubject, valueUpdate: \'afterkeydown\'" placeholder="New subject..." required />\r\n                                    <span class="input-group-btn">\r\n                                        <button class="btn btn-default" type="submit" data-bind="popover: \'Add new subject\'"><i class="fa fa-plus"></i></button>\r\n                                    </span>\r\n                                </div>\r\n                            </form>\r\n                        </li>\r\n                    </ul>\r\n                </li>\r\n            </ul>\r\n\r\n            <div class="pull-right log-out">\r\n                <span data-bind="text: userName"></span>\r\n                <i class="fa fa-sign-out" data-bind="click: logOut, popover: \'Sign out\'"></i>\r\n            </div>\r\n\r\n            </div>\r\n        </div>\r\n    </nav>\r\n\r\n    <div data-bind="css: { \'wrapper dark-wrapper\': userName }">\r\n\r\n        <div class="splash vertical-middle" data-bind="visible: router.isNavigating() || removingSubjectData()">\r\n            <div class="message" data-bind="visible: removingSubjectData()">Removing subject data...</div>\r\n            <i class="fa fa-spinner fa-spin"></i>\r\n        </div>\r\n\r\n        <div data-bind="visible: !router.isNavigating() && !removingSubjectData(), router: {}"></div>\r\n\r\n    </div>\r\n\r\n</div>\r\n';});
+define('text!views/shell.html',[],function () { return '<div class="container">\r\n\r\n    <nav class="navbar navbar-inverse" role="navigation" data-bind="visible: userName">\r\n        <div class="container-fluid">\r\n            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">\r\n                <span class="sr-only">Toggle Navigation</span>\r\n                <span class="icon-bar"></span>\r\n                <span class="icon-bar"></span>\r\n                <span class="icon-bar"></span>\r\n            </button>\r\n\r\n        <div class="collapse navbar-collapse" id="main-navbar">\r\n            <ul class="nav navbar-nav">\r\n                <!--ko foreach: router.navigationModel -->\r\n                <li data-bind="css: { active: isActive }">\r\n                    <a data-bind="attr: { href: hash }">\r\n                        <i data-bind="attr: { class: \'fa fa-\' + icon }"></i>\r\n                        <span data-bind="text: title"></span>\r\n                    </a>\r\n                </li>\r\n                <!--/ko-->\r\n\r\n                <li class="dropdown">\r\n                    <a href="#" class="dropdown-toggle" data-bind="click: refreshSubjects" data-toggle="dropdown" role="button" aria-expanded="false">\r\n                        <i class="fa fa-book"></i> Subjects <span class="caret"></span>\r\n                    </a>\r\n                    <ul class="dropdown-menu subj-dropdown" role="menu">\r\n                        <li class="loading" data-bind="visible: isBusy"><div class="splash small"><i class="fa fa-spinner fa-spin"></i></div></li>\r\n\r\n                        <!--ko foreach: subjects-->\r\n                        <li>\r\n                            <a href="#" data-bind="attr: { href: \'#subjects/\' + name }">\r\n                                <span data-bind="text: name"></span>\r\n                            </a>\r\n                            <i class="fa fa-times" data-bind="click: $root.removeSubject, popover: \'Remove subject\'"></i>\r\n                        </li>\r\n                        <!--/ko-->\r\n                        <li class="add-subj">\r\n                            <form data-bind="submit: addNewSubject">\r\n                                <div class="input-group input-group-sm">\r\n                                    <input class="form-control" type="text" data-bind="value: newSubject, valueUpdate: \'afterkeydown\'" placeholder="New subject..." required />\r\n                                    <span class="input-group-btn">\r\n                                        <button class="btn btn-default" type="submit" data-bind="popover: \'Add new subject\'"><i class="fa fa-plus"></i></button>\r\n                                    </span>\r\n                                </div>\r\n                            </form>\r\n                        </li>\r\n                    </ul>\r\n                </li>\r\n            </ul>\r\n\r\n            <div class="pull-right log-out">\r\n                <span data-bind="text: userName"></span>\r\n                <i class="fa fa-sign-out" data-bind="click: logOut, popover: \'Sign out\'"></i>\r\n            </div>\r\n\r\n            </div>\r\n        </div>\r\n    </nav>\r\n\r\n    <div data-bind="css: { \'wrapper dark-wrapper\': userName }">\r\n\r\n        <div class="splash vertical-middle" data-bind="visible: router.isNavigating() || removingSubjectData()">\r\n            <div class="message" data-bind="visible: removingSubjectData()">Removing subject data...</div>\r\n            <i class="fa fa-spinner fa-spin"></i>\r\n        </div>\r\n\r\n        <div data-bind="visible: !router.isNavigating() && !removingSubjectData(), router: {}"></div>\r\n\r\n    </div>\r\n\r\n</div>\r\n';});
 
 
 define('text!views/signin.html',[],function () { return '<div class="wrapper sign-in">\r\n\r\n    <h2 class="text-center">\r\n        <i class="fa fa-mortar-board"></i>\r\n        Student Organizer\r\n    </h2>\r\n    <br />\r\n\r\n    <h3>Sign In</h3>\r\n    <hr />\r\n\r\n    <form data-bind="submit: submit">\r\n        <div class="form-group">\r\n            <label for="username">Username</label>\r\n            <input type="text" class="form-control" id="username" placeholder="Username" data-bind="value: username" required>\r\n        </div>\r\n        <div class="form-group">\r\n            <label for="passwordInput">Password</label>\r\n            <input type="password" class="form-control" id="passwordInput" placeholder="Password" data-bind="value: password" required>\r\n            <br />\r\n        </div>\r\n        <hr />\r\n        <div>\r\n            <button type="submit" class="btn btn-default success pull-right"><i class="fa fa-sign-in"></i> Sign In</button>\r\n            <a href="#signup"><span class="btn btn-default blue-btn">Create an account</span></a>\r\n        </div>\r\n    </form>\r\n\r\n</div>\r\n';});
@@ -9679,13 +9682,13 @@ define('text!views/signin.html',[],function () { return '<div class="wrapper sig
 define('text!views/signup.html',[],function () { return '<div class="wrapper sign-in">\r\n\r\n    <h2 class="text-center">\r\n        <i class="fa fa-mortar-board"></i>\r\n        Student Organizer\r\n    </h2>\r\n    <br />\r\n\r\n    <h3>Sign Up</h3>\r\n    <hr />\r\n\r\n    <form data-bind="submit: submit">\r\n        <div class="form-group">\r\n            <label for="username">Username</label>\r\n            <input type="text" class="form-control" id="username" placeholder="Choose your username.." data-bind="value: username" required>\r\n        </div>\r\n        <div class="form-group">\r\n            <label for="passwordInput">Password</label>\r\n            <input type="password" class="form-control" id="passwordInput" placeholder="Type your password.." data-bind="value: password" required>\r\n        </div>\r\n        <div class="form-group">\r\n            <label for="passwordConfirm">Confirm your password</label>\r\n            <input type="password" class="form-control" id="passwordConfirm" placeholder="Confirm your password.." data-bind="value: passwordConfirm" required>\r\n            <br />\r\n        </div>\r\n        <hr />\r\n        <div>\r\n            <a href="#signin"><span class="btn btn-default blue-btn"><i class="fa fa-sign-in"></i> Sign In</span></a>\r\n            <button type="submit" class="btn btn-default success pull-right">Create an account</button>\r\n        </div>\r\n    </form>\r\n\r\n</div>';});
 
 
-define('text!views/subject/deck.html',[],function () { return '<div class="wrapper light-wrapper deck">\r\n    <h3 class="text-center">Flashcards deck</h3>\r\n\r\n    <div class="splash" data-bind="visible: isBusy"><i class="fa fa-spinner fa-spin"></i></div>\r\n\r\n    <div data-bind="visible: !isBusy()">\r\n        <br />\r\n        <h4 class="text-center" data-bind="visible: !flashcards().length">This deck is empty.</h4>\r\n        <form data-bind="submit: saveCard">\r\n            <div class="row">\r\n                <div class="col-md-6">\r\n                    <textarea class="form-control" data-bind="value: cardToSave.front, valueUpdate: \'afterkeydown\'" rows="5" placeholder="front" required></textarea>\r\n                </div>\r\n                <div class="col-md-6 text-right">\r\n                    <textarea class="form-control" data-bind="value: cardToSave.back, valueUpdate: \'afterkeydown\'" rows="5" placeholder="back" required></textarea>\r\n                    <br />\r\n                    <button class="btn edit" type="submit" data-bind="enable: !cardToEdit() || isDirty()">\r\n                        <span data-bind="visible: cardToEdit">Save</span>\r\n                        <span data-bind="visible: !cardToEdit()">Add</span>\r\n                    </button>\r\n                    <button class="btn clear" data-bind="click: resetState, popover: \'Clear\'"><i class="fa fa-eraser"></i></button>\r\n                </div>\r\n            </div>\r\n        </form>\r\n        <br />\r\n        <table class="table table-stripped" data-bind="visible: flashcards().length">\r\n            <thead>\r\n                <tr>\r\n                    <th></th>\r\n                    <th colspan="2">Front</th>\r\n                    <th colspan="3">Back</th>\r\n                    <th colspan="2">Due Date</th>\r\n                </tr>\r\n            </thead>\r\n            <tbody data-bind="foreach: flashcards">\r\n                <tr>\r\n                    <td data-bind="text: $index() + 1"></td>\r\n                    <td colspan="2" class="editable" data-bind="click: $root.editCard"><span data-bind="    text: front"></span></td>\r\n                    <td colspan="3" class="editable" data-bind="click: $root.editCard"><span data-bind="    text: back"></span></td>\r\n                    <td data-bind="text: dueDate().format(\'DD/MM/YYYY\')"></td>\r\n                    <td class="text-center"><i class="fa fa-times remove" data-bind="click: $root.deleteCard, popover: \'Remove\'"></i></td>\r\n                </tr>\r\n            </tbody>\r\n        </table>\r\n    </div>\r\n</div>\r\n';});
+define('text!views/subject/deck.html',[],function () { return '<div class="wrapper light-wrapper deck">\r\n    <h3 class="text-center">Flashcards deck</h3>\r\n\r\n    <div class="splash" data-bind="visible: isBusy"><i class="fa fa-spinner fa-spin"></i></div>\r\n\r\n    <div data-bind="visible: !isBusy()">\r\n        <br />\r\n        <h4 class="text-center" data-bind="visible: !flashcards().length">This deck is empty.</h4>\r\n        <form data-bind="submit: saveCard">\r\n            <div class="row">\r\n                <div class="col-md-6">\r\n                    <textarea class="form-control" data-bind="value: cardToSave.front, valueUpdate: \'afterkeydown\'" rows="5" placeholder="front" required></textarea>\r\n                </div>\r\n                <div class="col-md-6 text-right">\r\n                    <textarea class="form-control" data-bind="value: cardToSave.back, valueUpdate: \'afterkeydown\'" rows="5" placeholder="back" required></textarea>\r\n                    <br />\r\n                    <button class="btn edit" type="submit" data-bind="enable: !cardToEdit() || isDirty()">\r\n                        <span data-bind="visible: cardToEdit">Save</span>\r\n                        <span data-bind="visible: !cardToEdit()">Add</span>\r\n                    </button>\r\n                    <button class="btn clear" data-bind="click: resetState, popover: \'Clear\'"><i class="fa fa-eraser"></i></button>\r\n                </div>\r\n            </div>\r\n        </form>\r\n        <br />\r\n        <table class="table table-stripped" data-bind="visible: flashcards().length">\r\n            <thead>\r\n                <tr>\r\n                    <th></th>\r\n                    <th colspan="2">Front</th>\r\n                    <th colspan="3">Back</th>\r\n                    <th colspan="2">Due Date</th>\r\n                </tr>\r\n            </thead>\r\n            <tbody data-bind="foreach: flashcards">\r\n                <tr>\r\n                    <td data-bind="text: $index() + 1 +\'.\'"></td>\r\n                    <td colspan="2" class="editable" data-bind="click: $root.editCard"><span data-bind="    text: front"></span></td>\r\n                    <td colspan="3" class="editable" data-bind="click: $root.editCard"><span data-bind="    text: back"></span></td>\r\n                    <td data-bind="text: dueDate().format(\'DD/MM/YYYY\')"></td>\r\n                    <td class="text-center"><i class="fa fa-times remove" data-bind="click: $root.deleteCard, popover: \'Remove\'"></i></td>\r\n                </tr>\r\n            </tbody>\r\n        </table>\r\n    </div>\r\n</div>\r\n';});
 
 
-define('text!views/subject/flashcards.html',[],function () { return '<div class="wrapper light-wrapper flashcards">\r\n    <div class="row">\r\n        <div class="col-md-8 col-md-offset-2 text-center">\r\n            <h3>Flashcards</h3>\r\n            <br />\r\n\r\n            <div data-bind="visible: flashcards().length">\r\n                Cards to learn: <span class="badge" data-bind="text: flashcards().length"></span>\r\n                <div data-bind="visible: !currentCard()">\r\n                    <br />\r\n                    <button class="btn edit" data-bind="click: showNextCard">Study!</button>\r\n                </div>\r\n            </div>\r\n\r\n            <div data-bind="visible: !flashcards().length">\r\n                No cards for today!\r\n                <div>\r\n                    <br />\r\n                    <a data-bind="attr: { href: \'#subjects/\' + subject() + \'/deck\' }">\r\n                        <span class="btn edit">Add cards</span>\r\n                    </a>\r\n                </div>\r\n            </div>\r\n            <br />\r\n\r\n            <div data-bind="with: currentCard">\r\n                <div data-bind="visible: !$root.isAnswerVisible()">\r\n                    <div class="card card-front" data-bind="text: front"></div>\r\n                    <button class="btn edit" data-bind="click: function () { $root.isAnswerVisible(true); }">Show answer</button>\r\n                </div>\r\n                <div data-bind="visible: $root.isAnswerVisible">\r\n                    <div class="card card-back" data-bind="text: back"></div>\r\n                    <span class="hard">Hard</span>\r\n                    <span data-bind="foreach: [0, 1, 2]">\r\n                        <button class="btn button hard" data-bind="text: $data, click: $root.reviewCard"></button>\r\n                    </span>\r\n                    <span data-bind="foreach: [3, 4, 5]">\r\n                        <button class="btn button easy" data-bind="text: $data, click: $root.reviewCard"></button>\r\n                    </span>\r\n                    <span class="easy">Easy</span>\r\n                </div>\r\n            </div>\r\n        </div>\r\n\r\n        <div class="col-md-2 text-center">\r\n            <a data-bind="attr: { href: \'#subjects/\' + subject() + \'/deck\' }">\r\n                <i class="fa fa-language deck-link" data-bind="popover: \'View deck\'"></i>\r\n            </a>\r\n        </div>\r\n    </div>\r\n</div>\r\n';});
+define('text!views/subject/flashcards.html',[],function () { return '<div class="wrapper light-wrapper flashcards">\r\n    <div class="row">\r\n        <div class="col-md-8 col-md-offset-2 text-center">\r\n            <h3>Flashcards</h3>\r\n            <br />\r\n\r\n            <div data-bind="visible: flashcards().length">\r\n                Cards to learn: <span class="badge" data-bind="text: flashcards().length"></span>\r\n                <div data-bind="visible: !currentCard()">\r\n                    <br />\r\n                    <button class="btn edit" data-bind="click: showNextCard">Study!</button>\r\n                </div>\r\n            </div>\r\n\r\n            <div data-bind="visible: !flashcards().length">\r\n                No cards for today!\r\n                <div>\r\n                    <br />\r\n                    <a data-bind="attr: { href: \'#subjects/\' + subject() + \'/deck\' }">\r\n                        <span class="btn edit">Add cards</span>\r\n                    </a>\r\n                </div>\r\n            </div>\r\n            <br />\r\n\r\n            <div data-bind="with: currentCard">\r\n                <div data-bind="visible: !$root.isAnswerVisible()">\r\n                    <div class="card card-front" data-bind="text: front"></div>\r\n                    <button class="btn edit" data-bind="click: function () { $root.isAnswerVisible(true); }">Show answer</button>\r\n                </div>\r\n                <div data-bind="visible: $root.isAnswerVisible">\r\n                    <div class="card card-back" data-bind="text: back"></div>\r\n                    <span class="hard">Hard</span>\r\n                    <span data-bind="foreach: [1, 2]">\r\n                        <button class="btn button hard" data-bind="text: $data, click: $root.reviewCard"></button>\r\n                    </span>\r\n                    <span data-bind="foreach: [3, 4, 5]">\r\n                        <button class="btn button easy" data-bind="text: $data, click: $root.reviewCard"></button>\r\n                    </span>\r\n                    <span class="easy">Easy</span>\r\n                </div>\r\n            </div>\r\n        </div>\r\n\r\n        <div class="col-md-2 text-center">\r\n            <a data-bind="attr: { href: \'#subjects/\' + subject() + \'/deck\' }">\r\n                <i class="fa fa-language deck-link" data-bind="popover: \'View deck\'"></i>\r\n            </a>\r\n        </div>\r\n    </div>\r\n</div>\r\n';});
 
 
-define('text!views/subject/notes.html',[],function () { return '<div class="splash" data-bind="visible: isBusy"><i class="fa fa-spinner fa-spin"></i></div>\r\n\r\n<div class="notes" data-bind="visible: !isBusy()">\r\n    <div class="row heading">        \r\n        <div class="col-md-11">\r\n            <h3 class="text-right" data-bind="text: title"></h3>\r\n        </div>\r\n        <div class="col-md-1">\r\n            <i class="fa fa-floppy-o save" data-bind="click: saveData, popover: \'Save changes\'"></i>\r\n        </div>\r\n    </div>\r\n    <br />\r\n    <div class="row">\r\n        <div class="col-md-12">\r\n            <form>\r\n                <textarea name="editor" id="editor" data-bind="texteditor: editor"></textarea>\r\n            </form>\r\n        </div>\r\n    </div>\r\n</div>\r\n';});
+define('text!views/subject/notes.html',[],function () { return '<div class="splash" data-bind="visible: isBusy"><i class="fa fa-spinner fa-spin"></i></div>\r\n\r\n<div class="notes" data-bind="visible: !isBusy()">\r\n    <div class="row heading">\r\n        <div class="col-md-11">\r\n            <h3 data-bind="text: title"></h3>\r\n        </div>\r\n        <div class="col-md-1 text-right">\r\n            <i class="fa fa-floppy-o save" data-bind="click: saveData, popover: \'Save changes\'"></i>\r\n        </div>\r\n    </div>\r\n\r\n    <div class="row">\r\n        <div class="col-md-12">\r\n            <form>\r\n                <textarea name="editor" id="editor" data-bind="texteditor: editor"></textarea>\r\n            </form>\r\n        </div>\r\n    </div>\r\n</div>\r\n';});
 
 
 define('text!views/subject/notesList.html',[],function () { return '<div class="wrapper light-wrapper">\r\n    <div class="notes-list">\r\n        <h3 class="text-center">Notes</h3>\r\n\r\n        <div class="splash" data-bind="visible: isBusy"><i class="fa fa-spinner fa-spin"></i></div>\r\n\r\n        <div data-bind="visible: !isBusy()">\r\n            <br />\r\n            <!--ko foreach: notesList -->\r\n            <div class="row">\r\n                <div class="col-md-7">\r\n                    <strong data-bind="text: $index() + 1 + \'.  \' + title"></strong>\r\n                </div>\r\n                <div class="col-md-3 text-right">\r\n                    <span>updated at: </span>\r\n                    <p data-bind="text: moment(updatedAt).format(\'HH:mm, MMM DD, YYYY\')"></p>\r\n                </div>\r\n                <div class="col-md-2 text-right">\r\n                    <a href="#" class="link" data-bind="attr: { href: \'#subjects/\' + $root.subject() + \'/notes/\' + objectId }">\r\n                        <span class="btn edit"><i class="fa fa-file-text"  data-bind="popover: \'Open notes\'"></i></span>\r\n                    </a>\r\n                    <button class="btn delete" data-bind="click: $root.removeNotes, popover: \'Remove\'"><i class="fa fa-trash-o"></i></button>\r\n                </div>\r\n            </div>\r\n            <hr class="line" />\r\n            <!--/ko-->\r\n            <div class="text-center" data-bind="visible: !notesList().length">\r\n                <h4>There are no notes.</h4>\r\n                <button class="btn edit" data-bind="click: createNewNotes">+ Create new notes</button>\r\n            </div>\r\n            <div class="text-right" data-bind="visible: notesList().length">\r\n                <button class="btn edit" data-bind="click: createNewNotes">+ Create new notes</button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n</div>\r\n';});
