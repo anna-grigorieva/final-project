@@ -337,15 +337,15 @@
     cursor: pointer;
 }
 .save {
-    margin-top: 8px;
-    margin-left: 10px;
+    margin-top: 25px;
+    margin-right: 20px;
     color: #adadad;
     font-size: 16pt;
     text-shadow: 4px 2px 3px rgba(0, 0, 0, 1);
-    cursor: pointer;
 }
 .save:hover {
     color: whitesmoke;
+    cursor: pointer;
 }
 .button:hover, .edit:hover, .delete:hover, .clear:hover {
     background-color: rgba(255, 255, 255, 0.4);
@@ -391,11 +391,6 @@
 /* headers */
 .tasks h3, .tasks h4, .events h3, .events h4, .schedule h3, .notes-list h3, .flashcards h3, .deck h3 {
     color: #023b4b;
-}
-.notes h3 {
-    text-shadow: 4px 2px 3px rgba(0, 0, 0, 1);
-    color: #dfdfdf;
-    margin-top: 0;
 }
 h4.subject {
     margin: 5px 0 15px 0;
@@ -461,7 +456,6 @@ table td{
 .side-nav li {
     background-color: rgba(253, 174, 174, 0.15);
     margin-bottom: 10px;
-    margin-left: 10px;
     padding-left: 15px;
     -webkit-box-shadow: 3px 3px 3px 0px rgba(0,0,0,0.5);
     -moz-box-shadow: 3px 3px 3px 0px rgba(0,0,0,0.5);
@@ -477,8 +471,29 @@ table td{
 }
 
 /* notes */
+.heading {
+    text-align: center;
+    margin: 0;
+    background-color: #333;
+    border: 1px solid #0d0d0d;
+    border-bottom: none;
+    -moz-box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset;
+    -webkit-box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset;
+}
+.notes h3 {
+    color: #adadad;
+    text-shadow: 4px 2px 3px rgba(0, 0, 0, 1);    
+}
 #cke_editor {
-    border: none;
+    border: none;    
+}
+.cke_top.cke_reset_all{
+    border-top: none;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    padding-bottom: 10px !important;
 }
 .cke_contents.cke_reset {
     min-height: 550px !important;
